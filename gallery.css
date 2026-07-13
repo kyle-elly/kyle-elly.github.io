@@ -160,6 +160,7 @@ h1 .subtitle {
   color: var(--muted);
   font-style: italic;
   width: 100%;
+  column-span: all;
 }
 
 /* Lightbox */
