@@ -62,39 +62,13 @@ body.theme-booth {
 }
 .home-link:active { transform: translateY(1px); }
 
-/* Switch-gallery button (top-right) */
-.switch-link {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--accent);
-  text-decoration: none;
-  border: 1px solid var(--accent-soft);
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  box-shadow: 0 2px 6px var(--accent-shadow);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 10;
-  transition: transform 0.1s;
-}
-.switch-link:active { transform: translateY(1px); }
-
 @media (max-width: 600px) {
-  .home-link, .switch-link {
+  .home-link {
     top: 12px;
+    left: 12px;
     padding: 7px 12px;
     font-size: 13px;
   }
-  .home-link   { left: 12px; }
-  .switch-link { right: 12px; }
 }
 
 h1 {
