@@ -295,13 +295,17 @@
 
       for (var i = 0; i < validFiles.length; i++) {
         var f = validFiles[i];
+        var fileIndex = i;   // capture for closure
         try {
-          await uploadOne(f, guestName);
+          await uploadOne(f, guestName, function(fraction) {
+            // Combine file-level + within-file progress
+            var overall = ((fileIndex + fraction) / validFiles.length) * 100;
+            progressBar.style.width = Math.round(overall) + '%';
+          });
           uploaded++;
         } catch (e) {
           failed.push(f.name);
         }
-        progressBar.style.width = Math.round(((i + 1) / validFiles.length) * 100) + '%';
       }
 
       if (failed.length === 0) {
@@ -313,6 +317,7 @@
             'They\'ll appear in the gallery within a few minutes 💚' +
           '</div>'
         );
+        statusEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         fileList.innerHTML = '';
         validFiles = [];
         fileInput.value = '';
@@ -328,9 +333,7 @@
         submitBtn.disabled = false;
         fileInput.disabled = false;
         nameInput.disabled = false;
-      
-        // Auto-scroll to the success banner so it's visible on mobile
-        statusEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
       } else {
         showStatus(uploaded + ' uploaded, ' + failed.length + ' failed. ' +
                    'Please try again for: ' + failed.join(', '), 'error');
@@ -341,7 +344,7 @@
       uploadInProgress = false;
     });
 
-    function uploadOne(file, guestName) {
+    function uploadOne(file, guestName, onProgress) {
       return new Promise(function(resolve, reject) {
         var reader = new FileReader();
         reader.onload = function() {
@@ -351,17 +354,25 @@
           payload.set('mimeType', file.type || 'application/octet-stream');
           payload.set('guestName', guestName);
           payload.set('data', base64);
-
-          fetch(UPLOAD_URL, {
-            method: 'POST',
-            body: payload
-          })
-          .then(function(r) { return r.json(); })
-          .then(function(res) {
-            if (res && res.ok) resolve();
-            else reject(new Error(res && res.error ? res.error : 'upload failed'));
-          })
-          .catch(reject);
+    
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', UPLOAD_URL);
+          xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable && onProgress) {
+              onProgress(e.loaded / e.total);
+            }
+          });
+          xhr.onload = function() {
+            try {
+              var res = JSON.parse(xhr.responseText);
+              if (res && res.ok) resolve();
+              else reject(new Error(res && res.error ? res.error : 'upload failed'));
+            } catch (err) {
+              reject(new Error('bad response'));
+            }
+          };
+          xhr.onerror = function() { reject(new Error('network error')); };
+          xhr.send(payload.toString());
         };
         reader.onerror = function() { reject(new Error('read failed')); };
         reader.readAsDataURL(file);
