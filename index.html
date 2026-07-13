@@ -69,15 +69,32 @@
       margin: 0 0 36px 0;
     }
 
+    .section {
+      max-width: 380px;
+      margin: 0 auto 28px auto;
+    }
+
+    .section-heading {
+      font-family: 'Alex Brush', Georgia, cursive;
+      font-size: 36px;
+      color: var(--eucalyptus-dark);
+      text-align: center;
+      margin: 0 0 12px 0;
+      line-height: 1;
+    }
+
+    .section-heading.browse {
+      color: var(--purple-dark);
+    }
+
     .choices {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      max-width: 380px;
-      margin: 0 auto;
     }
 
     .choice {
+      position: relative;
       display: block;
       text-align: center;
       padding: 22px 24px;
@@ -111,22 +128,22 @@
       margin-top: 4px;
     }
 
-    .choice.gallery {
-      background: linear-gradient(135deg, var(--eucalyptus) 0%, var(--eucalyptus-dark) 100%);
-    }
-
-    .choice.upload {
+    /* Share (upload) buttons — purple family */
+    .choice.upload-photos {
       background: linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 100%);
     }
-
-    .choice.video {
+    .choice.upload-videos {
       background: linear-gradient(135deg, #d4a5a5 0%, #b88585 100%);
     }
-    
-    .choice {
-      position: relative;   /* needed so .badge can anchor */
+
+    /* Browse buttons — eucalyptus family */
+    .choice.gallery-guest {
+      background: linear-gradient(135deg, var(--eucalyptus) 0%, var(--eucalyptus-dark) 100%);
     }
-    
+    .choice.gallery-booth {
+      background: linear-gradient(135deg, #b8c9a4 0%, #91a67e 100%);
+    }
+
     .badge {
       position: absolute;
       top: 10px;
@@ -169,32 +186,45 @@
 
   <p class="tagline">Thank you for celebrating with us 💚</p>
 
-  <div class="choices">
-    <a class="choice gallery"
-      href="gallery.html">
-      <span class="emoji">🖼️</span>
-      View the Photobook
-      <span class="sub">Browse photos from the day</span>
-    </a>
-  
-    <a class="choice upload"
-      href="under-construction.html">
-      <span class="badge">Coming Soon</span>
-      <span class="emoji">📷</span>
-      Share Your Photos
-      <span class="sub">Add your favorite moments</span>
-    </a>
-  
-    <a class="choice video"
-      href="under-construction.html">
-      <span class="badge">Maybe Coming Soon</span>
-      <span class="emoji">🎥</span>
-      Share a Short Video
-      <span class="sub">Up to 50 MB</span>
-    </a>
+  <!-- SHARE -->
+  <div class="section">
+    <h2 class="section-heading">Share</h2>
+    <div class="choices">
+      <a class="choice upload-photos" href="under-construction.html">
+        <span class="badge">Coming Soon</span>
+        <span class="emoji">📷</span>
+        Upload Photos
+        <span class="sub">Add your favorite moments</span>
+      </a>
+
+      <a class="choice upload-videos" href="under-construction.html">
+        <span class="badge">Maybe Coming Soon</span>
+        <span class="emoji">🎥</span>
+        Upload Videos
+        <span class="sub">Up to 50 MB</span>
+      </a>
+    </div>
   </div>
 
-  <p class="hint">With love, Kyle & Elly · August 8th, 2026</p>
+  <!-- BROWSE -->
+  <div class="section">
+    <h2 class="section-heading browse">Browse</h2>
+    <div class="choices">
+      <a class="choice gallery-guest" href="gallery.html">
+        <span class="emoji">🖼️</span>
+        Guest Gallery
+        <span class="sub">Photos shared by guests</span>
+      </a>
+
+      <a class="choice gallery-booth" href="photobooth.html">
+        <span class="emoji">📸</span>
+        Photo Booth Gallery
+        <span class="sub">Photos from the booth</span>
+      </a>
+    </div>
+  </div>
+
+  <p class="hint">Kyle & Elly · August 8th, 2026</p>
   
   <footer>If the buttons don't work, please refresh and try again, or try again tomorrow.</footer>
 </body>
