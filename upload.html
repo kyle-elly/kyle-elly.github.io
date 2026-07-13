@@ -299,17 +299,24 @@
       var uploaded = 0;
       var failed = [];
 
-      for (var i = 0; i < validFiles.length; i++) {
-        var f = validFiles[i];
-        try {
-          await uploadOne(f, guestName);   // no progress callback
-          uploaded++;
-        } catch (e) {
-          failed.push(f.name);
-        }
-        progressBar.style.transition = 'width 0.3s ease-out';
-        progressBar.style.width = Math.round(((i + 1) / validFiles.length) * 100) + '%';
-      }
+      // Kick off all uploads in parallel
+      var completed = 0;
+      var promises = validFiles.map(function(f) {
+        return uploadOne(f, guestName)
+          .then(function() {
+            uploaded++;
+            completed++;
+            progressBar.style.transition = 'width 0.3s ease-out';
+            progressBar.style.width = Math.round((completed / validFiles.length) * 100) + '%';
+          })
+          .catch(function(e) {
+            failed.push(f.name);
+            completed++;
+            progressBar.style.width = Math.round((completed / validFiles.length) * 100) + '%';
+          });
+      });
+      
+      await Promise.all(promises);
 
       if (failed.length === 0) {
         var plural = uploaded > 1;
