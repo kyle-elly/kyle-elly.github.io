@@ -6,7 +6,7 @@
   --purple-dark:      #8b7db8;
   --text:             #4a4a4a;
   --muted:            #999;
-  --accent:           var(--eucalyptus-dark);  /* overridden per page */
+  --accent:           var(--eucalyptus-dark);
   --accent-soft:      rgba(156, 175, 136, 0.4);
   --accent-shadow:    rgba(156, 175, 136, 0.25);
 }
@@ -28,13 +28,6 @@ body.lightbox-open {
   overflow: hidden;
   position: fixed;
   width: 100%;
-}
-
-/* Per-page accent variant */
-body.theme-booth {
-  --accent: var(--purple-dark);
-  --accent-soft: rgba(168, 155, 201, 0.4);
-  --accent-shadow: rgba(168, 155, 201, 0.30);
 }
 
 /* Home button (top-left) */
@@ -76,18 +69,20 @@ h1 {
   margin: 10px 0 8px 0;
   font-weight: normal;
   line-height: 1.1;
-  color: var(--accent);
 }
+
 h1 .couple {
   font-family: 'Alex Brush', Georgia, cursive;
   font-size: 68px;
   display: block;
   line-height: 1;
+  color: var(--eucalyptus-dark);
 }
+
 h1 .subtitle {
   font-family: 'Alex Brush', Georgia, cursive;
   font-size: 42px;
-  color: var(--accent);
+  color: var(--purple-dark);
 }
 @media (max-width: 600px) {
   h1 .couple   { font-size: 52px; }
