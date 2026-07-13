@@ -271,7 +271,9 @@
 
       submitBtn.disabled = validFiles.length === 0;
       if (validFiles.length > 0) {
-        statusEl.style.display = 'none';
+        statusEl.className = '';        // no class → CSS default display:none applies
+        statusEl.textContent = '';
+        statusEl.style.display = '';    // just to be safe
       }
     });
 
@@ -375,11 +377,13 @@
     function showStatus(msg, kind) {
       statusEl.textContent = msg;
       statusEl.className = kind;
+      statusEl.style.display = '';
     }
 
     function showSuccess(html) {
       statusEl.innerHTML = html;
       statusEl.className = 'success';
+      statusEl.style.display = '';
     }
 
     function fmtSize(bytes) {
