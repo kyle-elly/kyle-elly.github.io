@@ -340,7 +340,7 @@
       } else {
         showStatus(uploaded + ' uploaded, ' + failed.length + ' failed. ' +
                    'Please try again for: ' + failed.join(', '), 'error');
-        submitBtn.disabled = false;
+        submitBtn.disabled = true;
         fileInput.disabled = false;
         nameInput.disabled = false;
       }
