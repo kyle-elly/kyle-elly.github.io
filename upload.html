@@ -128,8 +128,29 @@
     }
     #status.info    { display: block; background: rgba(156, 175, 136, 0.15); color: var(--eucalyptus-dark); }
     #status.error   { display: block; background: rgba(200, 100, 100, 0.15); color: #a04040; }
-    #status.success { display: block; background: rgba(168, 155, 201, 0.15); color: var(--purple-dark); font-weight: 600; }
-
+    #status.success {
+      display: block;
+      background: linear-gradient(135deg, rgba(156, 175, 136, 0.20), rgba(168, 155, 201, 0.20));
+      color: var(--eucalyptus-dark);
+      font-weight: 600;
+      font-size: 18px;
+      padding: 24px 20px;
+      border: 2px solid var(--eucalyptus);
+      box-shadow: 0 4px 16px rgba(156, 175, 136, 0.25);
+      animation: pop-in 0.4s ease-out;
+    }
+    #status.success .big-check {
+      display: block;
+      font-size: 48px;
+      margin-bottom: 8px;
+      line-height: 1;
+    }
+    
+    @keyframes pop-in {
+      0%   { transform: scale(0.7); opacity: 0; }
+      60%  { transform: scale(1.05); opacity: 1; }
+      100
+      
     #progress {
       height: 6px;
       background: var(--accent-soft);
@@ -172,6 +193,7 @@
       <span class="emoji">📷</span>
       <span class="label">Tap to choose photos</span>
       <span class="hint">JPG, PNG, or HEIC · up to 25 MB each · up to 20 at a time</span>
+      <span class="hint">Please stay on this page while photos upload — leaving will cancel them.</span>
       <input type="file" id="fileInput" accept="image/jpeg,image/png,image/heic,image/heif,image/webp" multiple>
     </label>
 
@@ -184,7 +206,7 @@
 
   </form>
 
-  <footer>With love, thank you for celebrating with us</footer>
+  <footer>Thank you for celebrating with us</footer>
 
   <script>
     // ============================================================
@@ -192,6 +214,16 @@
     // ============================================================
     var UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbxIiQuwD_pkzrl-YRAn5b8LBU1XqoUIJdDKFlgWrZITPOshfhaDJszPwYqpv36HRoG_/exec';
 
+    var uploadInProgress = false;
+
+    window.addEventListener('beforeunload', function(e) {
+      if (uploadInProgress) {
+        e.preventDefault();
+        e.returnValue = '';  // required for some browsers to show the prompt
+        return '';
+      }
+    });
+    
     var MAX_BYTES = 25 * 1024 * 1024;   // 25 MB
     var MAX_FILES = 20;
     var ALLOWED = /\.(jpe?g|png|heic|heif|webp)$/i;
@@ -244,11 +276,17 @@
 
     submitBtn.addEventListener('click', async function() {
       if (validFiles.length === 0) return;
+      uploadInProgress = true;
       submitBtn.disabled = true;
       fileInput.disabled = true;
       nameInput.disabled = true;
       progress.classList.add('active');
-      showStatus('Uploading ' + validFiles.length + ' photo(s)…', 'info');
+      showStatus(
+        '⏳ Uploading ' + validFiles.length + ' photo' +
+        (validFiles.length > 1 ? 's' : '') + '… please keep this page open',
+        'info'
+      );
+
 
       var guestName = (nameInput.value || '').trim().slice(0, 60);
       var uploaded = 0;
@@ -266,15 +304,32 @@
       }
 
       if (failed.length === 0) {
-        showStatus('Thanks! Your photo' + (uploaded > 1 ? 's' : '') +
-                   ' will appear in the gallery within a few minutes 💚', 'success');
+        var plural = uploaded > 1;
+        showSuccess(
+          '<span class="big-check">✅</span>' +
+          '<div>' + uploaded + ' photo' + (plural ? 's' : '') + ' uploaded!</div>' +
+          '<div style="font-size:14px; font-weight:normal; font-style:italic; margin-top:6px; color:var(--muted);">' +
+            'They\'ll appear in the gallery within a few minutes 💚' +
+          '</div>'
+        );
         fileList.innerHTML = '';
         validFiles = [];
         fileInput.value = '';
+        progress.classList.remove('active');
+        progressBar.style.width = '0%';
         submitBtn.textContent = 'Share More Photos';
+        setTimeout(function() {
+          var linkHtml = '<div style="margin-top:14px; font-size:14px;">' +
+            '<a href="gallery.html" style="color:var(--purple-dark); text-decoration:underline;">' +
+            '→ See all the photos so far</a></div>';
+          statusEl.innerHTML += linkHtml;
+        }, 500);
         submitBtn.disabled = false;
         fileInput.disabled = false;
         nameInput.disabled = false;
+      
+        // Auto-scroll to the success banner so it's visible on mobile
+        statusEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         showStatus(uploaded + ' uploaded, ' + failed.length + ' failed. ' +
                    'Please try again for: ' + failed.join(', '), 'error');
@@ -282,6 +337,7 @@
         fileInput.disabled = false;
         nameInput.disabled = false;
       }
+      uploadInProgress = false;
     });
 
     function uploadOne(file, guestName) {
@@ -314,6 +370,11 @@
     function showStatus(msg, kind) {
       statusEl.textContent = msg;
       statusEl.className = kind;
+    }
+
+    function showSuccess(html) {
+      statusEl.innerHTML = html;
+      statusEl.className = 'success';
     }
 
     function fmtSize(bytes) {
