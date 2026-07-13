@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://drive.google.com">
+  <link rel="dns-prefetch" href="https://drive.google.com">
   <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -30,8 +32,12 @@
       background-size: 300px 300px;
       min-height: 100vh;
     }
+    body.lightbox-open {
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
 
-    /* Home link — copied from Apps Script gallery */
     .home-link {
       position: absolute;
       top: 16px;
@@ -71,20 +77,17 @@
       line-height: 1.1;
       color: var(--eucalyptus-dark);
     }
-
     h1 .couple {
       font-family: 'Alex Brush', Georgia, cursive;
       font-size: 68px;
       display: block;
       line-height: 1;
     }
-
     h1 .subtitle {
       font-family: 'Alex Brush', Georgia, cursive;
       font-size: 42px;
       color: var(--purple-dark);
     }
-
     @media (max-width: 600px) {
       h1 .couple   { font-size: 52px; }
       h1 .subtitle { font-size: 34px; }
@@ -96,7 +99,7 @@
       font-style: italic;
       margin: 0 0 36px 0;
     }
-    
+
     .gallery {
       column-count: 4;
       column-gap: 12px;
@@ -110,7 +113,7 @@
     }
     @media (max-width: 900px) { .gallery { column-count: 3; } }
     @media (max-width: 600px) { .gallery { column-count: 2; } }
-    
+
     .gallery-item img {
       width: 100%;
       height: auto;
@@ -130,6 +133,89 @@
       color: var(--muted);
       font-style: italic;
       width: 100%;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .lightbox.visible { display: flex; }
+    .lightbox img {
+      max-width: 100%;
+      max-height: 80vh;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: pinch-zoom;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 22px;
+      cursor: pointer;
+    }
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border: none;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .lightbox-nav.prev { left: 20px;  }
+    .lightbox-nav.next { right: 20px; }
+    @media (max-width: 600px) {
+      .lightbox-nav { display: none; }
+    }
+    .lightbox-controls {
+      position: absolute;
+      bottom: 24px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .lightbox-caption {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 14px;
+      font-style: italic;
+      text-align: center;
+      min-height: 18px;
+      padding: 0 20px;
+    }
+    .lightbox-controls a {
+      background: rgba(255, 255, 255, 0.95);
+      color: var(--eucalyptus-dark);
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     footer {
@@ -159,30 +245,138 @@
     <p class="empty">Loading photos…</p>
   </div>
 
+  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <button class="lightbox-nav prev" onclick="navLightbox(-1, event)">‹</button>
+    <img id="lightboxImg" alt="Photo">
+    <button class="lightbox-nav next" onclick="navLightbox(1, event)">›</button>
+    <div class="lightbox-controls">
+      <div id="lightboxCaption" class="lightbox-caption"></div>
+      <a id="lightboxSave" href="#" download>💾 Save Photo</a>
+    </div>
+  </div>
+
   <footer>With love, thank you for celebrating with us</footer>
 
   <script>
+    var FILES = [];
+    var LIGHTBOX_INDEX = 0;
+    var LIGHTBOX_SCROLL_Y = 0;
+
     fetch('manifest.json?t=' + Date.now())
-      .then(r => r.json())
-      .then(files => {
+      .then(function(r) { return r.json(); })
+      .then(function(files) {
+        FILES = files;
         var g = document.getElementById('g');
         if (!files.length) {
           g.innerHTML = '<p class="empty">Photos coming soon 💚</p>';
           return;
         }
-        g.innerHTML = files.map(function(f) {
-          return '<div class="gallery-item">' +
-                   '<a href="https://drive.google.com/uc?export=download&id=' + f.id + '"' +
-                   ' target="_blank" download="' + f.name + '">' +
-                     '<img loading="lazy" src="thumbs/' + f.name + '" alt="">' +
-                   '</a>' +
+        g.innerHTML = files.map(function(f, i) {
+          return '<div class="gallery-item" data-index="' + i + '">' +
+                   '<img loading="lazy" src="thumbs/' + f.name + '" alt="">' +
                  '</div>';
         }).join('');
+        var items = g.querySelectorAll('.gallery-item');
+        items.forEach(function(item) {
+          item.addEventListener('click', function() {
+            openLightbox(parseInt(item.getAttribute('data-index'), 10));
+          });
+        });
       })
       .catch(function() {
         document.getElementById('g').innerHTML =
           '<p class="empty">Gallery is warming up — check back soon 💚</p>';
       });
+
+    function openLightbox(index) {
+      LIGHTBOX_INDEX = index;
+      showLightbox();
+    }
+
+    function showLightbox() {
+      var f = FILES[LIGHTBOX_INDEX];
+      var lbImg = document.getElementById('lightboxImg');
+      var cap = document.getElementById('lightboxCaption');
+
+      document.getElementById('lightboxSave').href =
+        'https://drive.google.com/uc?export=download&id=' + f.id;
+      document.getElementById('lightboxSave').setAttribute('download', f.name);
+
+      cap.textContent = f.caption ? '📷 ' + f.caption : '';
+
+      lbImg.style.display = '';
+      lbImg.onerror = function() {
+        lbImg.style.display = 'none';
+        cap.textContent = '⚠️ This photo couldn\u2019t load — swipe to continue';
+      };
+      lbImg.src = 'thumbs/' + f.name;
+
+      LIGHTBOX_SCROLL_Y = window.scrollY;
+      document.getElementById('lightbox').classList.add('visible');
+      document.body.classList.add('lightbox-open');
+      document.body.style.top = '-' + LIGHTBOX_SCROLL_Y + 'px';
+    }
+
+    function closeLightbox(event) {
+      if (event && event.target.tagName === 'IMG') return;
+      if (event && event.target.closest && event.target.closest('.lightbox-controls')) return;
+      if (event && event.target.closest && event.target.closest('.lightbox-nav')) return;
+
+      document.getElementById('lightbox').classList.remove('visible');
+      document.body.classList.remove('lightbox-open');
+      document.body.style.top = '';
+      window.scrollTo(0, LIGHTBOX_SCROLL_Y);
+    }
+
+    function navLightbox(delta, event) {
+      if (event) event.stopPropagation();
+      LIGHTBOX_INDEX =
+        (LIGHTBOX_INDEX + delta + FILES.length) % FILES.length;
+      showLightbox();
+    }
+
+    document.addEventListener('keydown', function(e) {
+      var visible = document.getElementById('lightbox').classList.contains('visible');
+      if (!visible) return;
+      if (e.key === 'ArrowLeft')  navLightbox(-1);
+      if (e.key === 'ArrowRight') navLightbox(1);
+      if (e.key === 'Escape')     closeLightbox();
+    });
+
+    (function() {
+      var box = document.getElementById('lightbox');
+      if (!box) return;
+      var startX = null;
+      var startY = null;
+
+      box.addEventListener('touchstart', function(e) {
+        if (window.visualViewport && window.visualViewport.scale > 1.05) {
+          startX = null; return;
+        }
+        if (e.touches.length !== 1) { startX = null; return; }
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      });
+
+      box.addEventListener('touchmove', function(e) {
+        if (e.touches.length > 1) startX = null;
+      });
+
+      box.addEventListener('touchend', function(e) {
+        if (startX === null) return;
+        if (window.visualViewport && window.visualViewport.scale > 1.05) {
+          startX = null; startY = null; return;
+        }
+        var dx = e.changedTouches[0].clientX - startX;
+        var dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+          navLightbox(dx < 0 ? 1 : -1);
+        }
+        startX = null;
+        startY = null;
+      });
+    })();
   </script>
 </body>
 </html>
