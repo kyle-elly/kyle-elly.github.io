@@ -333,14 +333,14 @@
             '→ See all the photos so far</a></div>';
           statusEl.innerHTML += linkHtml;
         }, 500);
-        submitBtn.disabled = false;
+        submitBtn.disabled = true;
         fileInput.disabled = false;
         nameInput.disabled = false;
         
       } else {
         showStatus(uploaded + ' uploaded, ' + failed.length + ' failed. ' +
                    'Please try again for: ' + failed.join(', '), 'error');
-        submitBtn.disabled = true;
+        submitBtn.disabled = false;
         fileInput.disabled = false;
         nameInput.disabled = false;
       }
