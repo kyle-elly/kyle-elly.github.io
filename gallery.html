@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kyle and Elly's Wedding Guest Photobook</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --white:           #fdfdfb;
+      --eucalyptus:      #9caf88;
+      --eucalyptus-dark: #7a8f6a;
+      --purple:          #a89bc9;
+      --purple-dark:     #8b7db8;
+      --text:            #4a4a4a;
+      --muted:           #999;
+    }
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      margin: 0;
+      padding: 20px;
+      color: var(--text);
+      background-color: var(--white);
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><g fill='none' stroke='%239caf88' stroke-width='1.2' opacity='0.35'><path d='M50 40 Q70 60 60 100 Q50 130 70 160'/><ellipse cx='55' cy='55' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(-30 55 55)'/><ellipse cx='68' cy='80' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(20 68 80)'/><ellipse cx='58' cy='105' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(-25 58 105)'/><ellipse cx='72' cy='130' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(15 72 130)'/><ellipse cx='63' cy='155' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(-20 63 155)'/><path d='M200 200 Q220 220 210 260 Q200 285 215 300'/><ellipse cx='205' cy='210' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(-30 205 210)'/><ellipse cx='215' cy='232' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(20 215 232)'/><ellipse cx='208' cy='255' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(-25 208 255)'/><ellipse cx='218' cy='280' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(15 218 280)'/><path d='M240 60 Q220 80 230 110 Q245 135 225 165'/><ellipse cx='237' cy='72' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(30 237 72)'/><ellipse cx='225' cy='92' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(-20 225 92)'/><ellipse cx='233' cy='118' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(25 233 118)'/><ellipse cx='222' cy='142' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(-15 222 142)'/></g></svg>");
+      background-repeat: repeat;
+      background-size: 300px 300px;
+      min-height: 100vh;
+    }
+
+    /* Home link — copied from Apps Script gallery */
+    .home-link {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--eucalyptus-dark);
+      text-decoration: none;
+      border: 1px solid rgba(156, 175, 136, 0.4);
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      box-shadow: 0 2px 6px rgba(156, 175, 136, 0.15);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 10;
+      transition: transform 0.1s;
+    }
+    .home-link:active { transform: translateY(1px); }
+    @media (max-width: 600px) {
+      .home-link {
+        top: 12px;
+        left: 12px;
+        padding: 7px 12px;
+        font-size: 13px;
+      }
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--eucalyptus-dark);
+      margin: 10px 0 20px 0;
+      font-weight: normal;
+      line-height: 1.1;
+    }
+    h1 .couple {
+      font-family: 'Alex Brush', 'Georgia', cursive;
+      font-size: 68px;
+      line-height: 1;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    h1 .subtitle {
+      font-family: 'Alex Brush', 'Georgia', cursive;
+      font-size: 42px;
+      letter-spacing: 1px;
+      color: var(--purple-dark);
+    }
+    @media (max-width: 600px) {
+      h1 .couple   { font-size: 52px; }
+      h1 .subtitle { font-size: 34px; }
+    }
+
+    .gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    .gallery-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 250px;
+      max-width: 100%;
+    }
+    @media (max-width: 600px) {
+      .gallery-item { width: calc(50% - 6px); }
+    }
+    .gallery-item img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(156, 175, 136, 0.25);
+      cursor: pointer;
+      border: 3px solid #fff;
+      transition: transform 0.15s;
+      box-sizing: border-box;
+      background: #eee;
+    }
+    .gallery-item img:active { transform: scale(0.97); }
+
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      font-style: italic;
+      width: 100%;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 40px 0 20px 0;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="home-link" href="index.html">
+    <span aria-hidden="true">‹</span>
+    <span>Home</span>
+  </a>
+
+  <h1>
+    <span class="couple">Kyle and Elly's</span><br>
+    <span class="subtitle">Wedding Guest Photobook</span>
+  </h1>
+
+  <div class="gallery" id="g">
+    <p class="empty">Loading photos…</p>
+  </div>
+
+  <footer>With love, thank you for celebrating with us</footer>
+
+  <script>
+    fetch('manifest.json?t=' + Date.now())
+      .then(r => r.json())
+      .then(files => {
+        var g = document.getElementById('g');
+        if (!files.length) {
+          g.innerHTML = '<p class="empty">Photos coming soon 💚</p>';
+          return;
+        }
+        g.innerHTML = files.map(function(f) {
+          return '<div class="gallery-item">' +
+                   '<a href="https://drive.google.com/uc?export=download&id=' + f.id + '"' +
+                   ' target="_blank" download="' + f.name + '">' +
+                     '<img loading="lazy" src="thumbs/' + f.name + '" alt="">' +
+                   '</a>' +
+                 '</div>';
+        }).join('');
+      })
+      .catch(function() {
+        document.getElementById('g').innerHTML =
+          '<p class="empty">Gallery is warming up — check back soon 💚</p>';
+      });
+  </script>
+</body>
+</html>
