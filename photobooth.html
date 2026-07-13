@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kyle and Elly's Photo Booth Gallery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://drive.google.com">
+  <link rel="dns-prefetch" href="https://drive.google.com">
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+
+  <a class="home-link" href="index.html">
+    <span aria-hidden="true">‹</span>
+    <span>Home</span>
+  </a>
+  <a class="switch-link" href="photobooth.html">
+    <span>🖼️ Guest Gallery</span>
+  </a>
+
+  <h1>
+    <span class="couple">Kyle and Elly's</span>
+    <span class="subtitle">Photo Booth</span>
+  </h1>
+
+  <p class="tagline">Snapshots from the booth 📸</p>
+
+  <div class="gallery" id="g">
+    <p class="empty">Loading photos…</p>
+  </div>
+
+  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <button class="lightbox-nav prev" onclick="navLightbox(-1, event)">‹</button>
+    <img id="lightboxImg" alt="Photo">
+    <button class="lightbox-nav next" onclick="navLightbox(1, event)">›</button>
+    <div class="lightbox-controls">
+      <div id="lightboxCaption" class="lightbox-caption"></div>
+      <a id="lightboxSave" href="#" download>💾 Save Photo</a>
+    </div>
+  </div>
+
+  <footer>Thank you for celebrating with us</footer>
+
+  <script>
+    window.MANIFEST_URL = 'manifest-booth.json';
+  </script>
+  <script src="gallery.js"></script>
+</body>
+</html>
