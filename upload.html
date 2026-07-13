@@ -282,6 +282,10 @@
       fileInput.disabled = true;
       nameInput.disabled = true;
       progress.classList.add('active');
+
+      progressBar.style.transition = 'width 1.5s ease-out';
+      progressBar.style.width = '40%';
+      
       showStatus(
         '⏳ Uploading ' + validFiles.length + ' photo' +
         (validFiles.length > 1 ? 's' : '') + '… please keep this page open',
@@ -295,17 +299,14 @@
 
       for (var i = 0; i < validFiles.length; i++) {
         var f = validFiles[i];
-        var fileIndex = i;   // capture for closure
         try {
-          await uploadOne(f, guestName, function(fraction) {
-            // Combine file-level + within-file progress
-            var overall = ((fileIndex + fraction) / validFiles.length) * 100;
-            progressBar.style.width = Math.round(overall) + '%';
-          });
+          await uploadOne(f, guestName);   // no progress callback
           uploaded++;
         } catch (e) {
           failed.push(f.name);
         }
+        progressBar.style.transition = 'width 0.3s ease-out';
+        progressBar.style.width = Math.round(((i + 1) / validFiles.length) * 100) + '%';
       }
 
       if (failed.length === 0) {
@@ -344,7 +345,7 @@
       uploadInProgress = false;
     });
 
-    function uploadOne(file, guestName, onProgress) {
+    function uploadOne(file, guestName) {
       return new Promise(function(resolve, reject) {
         var reader = new FileReader();
         reader.onload = function() {
@@ -355,24 +356,16 @@
           payload.set('guestName', guestName);
           payload.set('data', base64);
     
-          var xhr = new XMLHttpRequest();
-          xhr.open('POST', UPLOAD_URL);
-          xhr.upload.addEventListener('progress', function(e) {
-            if (e.lengthComputable && onProgress) {
-              onProgress(e.loaded / e.total);
-            }
-          });
-          xhr.onload = function() {
-            try {
-              var res = JSON.parse(xhr.responseText);
-              if (res && res.ok) resolve();
-              else reject(new Error(res && res.error ? res.error : 'upload failed'));
-            } catch (err) {
-              reject(new Error('bad response'));
-            }
-          };
-          xhr.onerror = function() { reject(new Error('network error')); };
-          xhr.send(payload.toString());
+          fetch(UPLOAD_URL, {
+            method: 'POST',
+            body: payload
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+            if (res && res.ok) resolve();
+            else reject(new Error(res && res.error ? res.error : 'upload failed'));
+          })
+          .catch(reject);
         };
         reader.onerror = function() { reject(new Error('read failed')); };
         reader.readAsDataURL(file);
