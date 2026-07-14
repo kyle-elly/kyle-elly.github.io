@@ -52,7 +52,10 @@
       lbImg.style.display = 'none';
       cap.textContent = '⚠️ This photo couldn\u2019t load — swipe to continue';
     };
-    lbImg.src = 'thumbnails/' + f.id + '.jpg';
+    lbImg.src = 'large/' + f.id + '.jpg';
+
+    new Image().src = 'large/' + FILES[(LIGHTBOX_INDEX + 1) % FILES.length].id + '.jpg';
+    new Image().src = 'large/' + FILES[(LIGHTBOX_INDEX - 1 + FILES.length) % FILES.length].id + '.jpg';
 
     LIGHTBOX_SCROLL_Y = window.scrollY;
     document.getElementById('lightbox').classList.add('visible');
