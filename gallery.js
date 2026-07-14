@@ -42,7 +42,7 @@
     var cap = document.getElementById('lightboxCaption');
 
     document.getElementById('lightboxSave').href =
-      'https://drive.google.com/uc?export=download&id=' + f.id;
+      'https://drive.usercontent.google.com/download?id=' + f.id + '&export=download&authuser=0';
     document.getElementById('lightboxSave').setAttribute('download', f.name);
 
     cap.textContent = f.caption ? '📷 ' + f.caption : '';
