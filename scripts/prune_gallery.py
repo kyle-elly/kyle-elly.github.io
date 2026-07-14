@@ -20,11 +20,16 @@ MANIFEST  = Path("manifest.json")
 SCOPES    = ["https://www.googleapis.com/auth/drive.readonly"]
 
 
-def list_drive_ids(svc) -> setids, page_token = set(), None
+def list_drive_ids(svc) -> set:
+    """Return the set of image file IDs currently in the Drive folder."""
+    ids: set = set()
+    page_token = None
     q = f"'{FOLDER_ID}' in parents and trashed = false"
     while True:
         resp = svc.files().list(
-            q=q, pageSize=1000, fields="nextPageToken, files(id,mimeType)",
+            q=q,
+            pageSize=1000,
+            fields="nextPageToken, files(id,mimeType)",
             pageToken=page_token,
         ).execute()
         for f in resp.get("files", []):
