@@ -2,7 +2,7 @@ name: Sync Guest Gallery
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # every 15 min; tighten to */10 wedding weekend
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:          # manual "Run workflow" button
 
 concurrency:
