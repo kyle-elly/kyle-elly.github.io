@@ -1,15 +1,15 @@
-name: Prune Photo Booth Gallery
+name: Prune Photo Booth (manual)
 
 on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Dry run (show what would be deleted, don't actually delete)"
+        description: "Dry run (show what would be removed, don't delete)"
         type: boolean
         default: true
 
 concurrency:
-  group: booth-sync              # share the sync group — prune must not run concurrently with sync
+  group: booth-sync
   cancel-in-progress: false
 
 permissions:
@@ -29,9 +29,7 @@ jobs:
           cache: pip
 
       - name: Install deps
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Write service account key
         run: echo '${{ secrets.BOOTH_DRIVE_SA_JSON }}' > sa.json
@@ -40,7 +38,6 @@ jobs:
         env:
           BOOTH_DRIVE_FOLDER_ID: ${{ secrets.BOOTH_DRIVE_FOLDER_ID }}
           BOOTH_DRIVE_SA_FILE: sa.json
-          PYTHONPATH: scripts
         run: |
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             python scripts/prune_booth.py --dry-run
@@ -53,7 +50,6 @@ jobs:
         run: rm -f sa.json
 
       - name: Commit changes
-        if: ${{ inputs.dry_run == false }}
         run: |
           git config user.name  "booth-sync[bot]"
           git config user.email "booth-sync@users.noreply.github.com"
@@ -64,6 +60,8 @@ jobs:
           fi
           git commit -m "Prune booth ($(date -u +%Y-%m-%dT%H:%MZ))"
 
+          # Push with automatic rebase-retry if remote advanced during our run.
+          # Up to 5 attempts, with a small backoff between them.
           for i in 1 2 3 4 5; do
             if git push; then
               echo "Push succeeded on attempt $i."
