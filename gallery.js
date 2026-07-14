@@ -14,18 +14,55 @@
         g.innerHTML = '<p class="empty">Photos coming soon 💚</p>';
         return;
       }
-      g.innerHTML = files.map(function(f, i) {
-        return '<div class="gallery-item" data-index="' + i + '">' +
-                 '<img loading="lazy" src="thumbnails/' + f.id + '.jpg" alt="">' +
-               '</div>';
-      }).join('');
-      var items = g.querySelectorAll('.gallery-item');
-      items.forEach(function(item) {
-        item.addEventListener('click', function() {
-          openLightbox(parseInt(item.getAttribute('data-index'), 10));
+
+      // --- Infinite scroll config ---
+      var BATCH_SIZE = 60;      // photos per batch
+      var renderedCount = 0;
+
+      function renderBatch() {
+        var next = FILES.slice(renderedCount, renderedCount + BATCH_SIZE);
+        if (!next.length) return;
+
+        var html = next.map(function(f, i) {
+          var globalIdx = renderedCount + i;
+          return '<div class="gallery-item" data-index="' + globalIdx + '">' +
+                   '<img loading="lazy" src="thumbnails/' + f.id + '.jpg" alt="">' +
+                 '</div>';
+        }).join('');
+
+        // Append (don't replace) so previous batches stay
+        var sentinel = document.getElementById('scroll-sentinel');
+        if (sentinel) sentinel.remove();
+        g.insertAdjacentHTML('beforeend', html);
+        renderedCount += next.length;
+
+        // Wire up click handlers on the newly added items only
+        g.querySelectorAll('.gallery-item:not([data-wired])').forEach(function(item) {
+          item.setAttribute('data-wired', '1');
+          item.addEventListener('click', function() {
+            openLightbox(parseInt(item.getAttribute('data-index'), 10));
+          });
         });
-      });
+
+        // Add a fresh sentinel at the end if there are more to load
+        if (renderedCount < FILES.length) {
+          g.insertAdjacentHTML('beforeend',
+            '<div id="scroll-sentinel" aria-hidden="true"></div>');
+          observer.observe(document.getElementById('scroll-sentinel'));
+        }
+      }
+
+      // IntersectionObserver watches the sentinel; when it enters
+      // the viewport (or gets within 400px of it), load the next batch.
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) renderBatch();
+        });
+      }, { rootMargin: '400px' });
+
+      renderBatch();
     })
+    
     .catch(function() {
       document.getElementById('g').innerHTML =
         '<p class="empty">Gallery is warming up — check back soon 💚</p>';
@@ -35,6 +72,13 @@
     LIGHTBOX_INDEX = index;
     showLightbox();
   }
+
+  window.navLightbox = function(delta, event) {
+    if (event) event.stopPropagation();
+    LIGHTBOX_INDEX =
+      (LIGHTBOX_INDEX + delta + FILES.length) % FILES.length;
+    showLightbox(true);   // ← pass a flag when navigating
+  };
 
   function showLightbox() {
     var f = FILES[LIGHTBOX_INDEX];
@@ -54,8 +98,10 @@
     };
     lbImg.src = 'large/' + f.id + '.jpg';
 
-    new Image().src = 'large/' + FILES[(LIGHTBOX_INDEX + 1) % FILES.length].id + '.jpg';
-    new Image().src = 'large/' + FILES[(LIGHTBOX_INDEX - 1 + FILES.length) % FILES.length].id + '.jpg';
+    if (fromNav) {
+      new Image().src = 'large/' + FILES[(LIGHTBOX_INDEX + 1) % FILES.length].id + '.jpg';
+      new Image().src = 'large/' + FILES[(LIGHTBOX_INDEX - 1 + FILES.length) % FILES.length].id + '.jpg';
+    }
 
     LIGHTBOX_SCROLL_Y = window.scrollY;
     document.getElementById('lightbox').classList.add('visible');
