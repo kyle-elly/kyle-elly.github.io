@@ -50,7 +50,20 @@ jobs:
           git add thumbnails large manifest.json
           if git diff --cached --quiet; then
             echo "No changes to commit."
-          else
-            git commit -m "Sync gallery ($(date -u +%Y-%m-%dT%H:%MZ))"
-            git push
+            exit 0
           fi
+          git commit -m "Sync gallery ($(date -u +%Y-%m-%dT%H:%MZ))"
+
+          # Push with automatic rebase-retry if remote advanced during our run.
+          # Up to 5 attempts, with a small backoff between them.
+          for i in 1 2 3 4 5; do
+            if git push; then
+              echo "Push succeeded on attempt $i."
+              exit 0
+            fi
+            echo "Push rejected (attempt $i). Rebasing on latest main and retrying..."
+            git pull --rebase origin main
+            sleep 2
+          done
+          echo "Push failed after 5 attempts."
+          exit 1
