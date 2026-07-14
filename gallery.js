@@ -15,6 +15,8 @@
         return;
       }
 
+      g.innerHTML = '';
+
       // --- Infinite scroll config ---
       var BATCH_SIZE = 60;      // photos per batch
       var renderedCount = 0;
