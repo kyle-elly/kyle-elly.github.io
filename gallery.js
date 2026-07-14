@@ -80,7 +80,7 @@
     showLightbox(true);   // ← pass a flag when navigating
   };
 
-  function showLightbox() {
+  function showLightbox(fromNav) {
     var f = FILES[LIGHTBOX_INDEX];
     var lbImg = document.getElementById('lightboxImg');
     var cap = document.getElementById('lightboxCaption');
@@ -118,13 +118,6 @@
     document.body.classList.remove('lightbox-open');
     document.body.style.top = '';
     window.scrollTo(0, LIGHTBOX_SCROLL_Y);
-  };
-
-  window.navLightbox = function(delta, event) {
-    if (event) event.stopPropagation();
-    LIGHTBOX_INDEX =
-      (LIGHTBOX_INDEX + delta + FILES.length) % FILES.length;
-    showLightbox();
   };
 
   document.addEventListener('keydown', function(e) {
