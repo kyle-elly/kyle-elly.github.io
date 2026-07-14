@@ -6,6 +6,7 @@
 import io
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -23,8 +24,30 @@ LARGE_DIR = Path("large")
 MANIFEST  = Path("manifest.json")
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
-MIME_IMAGE_PREFIXES = ("image/",)
 
+
+# ---- Uploader parsing --------------------------------------------------
+# Guest upload filename format (from Apps Script):
+#   YYYYMMDD-HHMMSS_First_Last_<6hex>_<originalname>.jpg
+# Example:
+#   20260713-200224_Kyle_McBrady_525e8f_1000005553.jpg
+#
+# Non-matching filenames (legacy, hand-renamed, etc.) fall back to ''
+# which reproduces today's blank-caption behavior — safe default.
+
+_UPLOADER_RE = re.compile(
+    r"^\d{8}-\d{6}_([^_]+)_([^_]+)_[0-9a-fA-F]{6}_"
+)
+
+def extract_uploader(filename: str) -> str:
+    """Return 'First Last' parsed from the guest upload filename, or ''."""
+    m = _UPLOADER_RE.match(filename)
+    if not m:
+        return ""
+    first, last = m.group(1).strip(), m.group(2).strip()
+    if not first and not last:
+        return ""
+    return f"{first} {last}".strip()
 
 def load_manifest() -> dict:
     if MANIFEST.exists():
@@ -99,6 +122,7 @@ def main() -> int:
             "uploadedAt": f.get("createdTime", ""),
             "w": w,
             "h": h,
+            "caption": extract_uploader(f["name"]),
         }
         added += 1
         print(f"  + {f['name']} ({w}x{h})")
