@@ -5,9 +5,19 @@
 
   var manifestUrl = window.MANIFEST_URL || 'manifest.json';
 
+  // Show "Loading photos…" only if the fetch takes longer than 300ms.
+  // Prevents a flash on fast connections.
+  var loadingTimer = setTimeout(function() {
+    var g = document.getElementById('g');
+    if (!g.hasChildNodes()) {
+      g.innerHTML = '<p class="empty">Loading photos…</p>';
+    }
+  }, 300);
+
   fetch(manifestUrl + '?t=' + Date.now())
     .then(function(r) { return r.json(); })
     .then(function(files) {
+      clearTimeout(loadingTimer);
       FILES = files;
       var g = document.getElementById('g');
       if (!files.length) {
@@ -66,6 +76,7 @@
     })
     
     .catch(function() {
+      clearTimeout(loadingTimer);
       document.getElementById('g').innerHTML =
         '<p class="empty">Gallery is warming up — check back soon 💚</p>';
     });
