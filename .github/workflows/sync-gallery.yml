@@ -1,0 +1,56 @@
+name: Sync Guest Gallery
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # every 15 min; tighten to */10 wedding weekend
+  workflow_dispatch:          # manual "Run workflow" button
+
+concurrency:
+  group: gallery-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write             # needed to push commits back
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install google-api-python-client google-auth Pillow pillow-heif
+
+      - name: Write service account key
+        run: echo '${{ secrets.GDRIVE_SA_JSON }}' > sa.json
+
+      - name: Run sync
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_SA_FILE: sa.json
+        run: python scripts/sync_gallery.py
+
+      - name: Clean up key
+        if: always()
+        run: rm -f sa.json
+
+      - name: Commit changes
+        run: |
+          git config user.name  "gallery-sync[bot]"
+          git config user.email "gallery-sync@users.noreply.github.com"
+          git add thumbnails manifest.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Sync gallery ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git push
+          fi
