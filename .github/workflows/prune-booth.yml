@@ -1,0 +1,77 @@
+name: Prune Photo Booth Gallery
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (show what would be deleted, don't actually delete)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: booth-sync              # share the sync group — prune must not run concurrently with sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Write service account key
+        run: echo '${{ secrets.BOOTH_DRIVE_SA_JSON }}' > sa.json
+
+      - name: Run prune
+        env:
+          BOOTH_DRIVE_FOLDER_ID: ${{ secrets.BOOTH_DRIVE_FOLDER_ID }}
+          BOOTH_DRIVE_SA_FILE: sa.json
+          PYTHONPATH: scripts
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python scripts/prune_booth.py --dry-run
+          else
+            python scripts/prune_booth.py
+          fi
+
+      - name: Clean up key
+        if: always()
+        run: rm -f sa.json
+
+      - name: Commit changes
+        if: ${{ inputs.dry_run == false }}
+        run: |
+          git config user.name  "booth-sync[bot]"
+          git config user.email "booth-sync@users.noreply.github.com"
+          git add booth_thumbnails booth_large booth_manifest.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Prune booth ($(date -u +%Y-%m-%dT%H:%MZ))"
+
+          for i in 1 2 3 4 5; do
+            if git push; then
+              echo "Push succeeded on attempt $i."
+              exit 0
+            fi
+            echo "Push rejected (attempt $i). Rebasing on latest main and retrying..."
+            git pull --rebase origin main
+            sleep 2
+          done
+          echo "Push failed after 5 attempts."
+          exit 1
