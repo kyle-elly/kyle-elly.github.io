@@ -24,7 +24,7 @@ LARGE_DIR = Path("large")
 MANIFEST  = Path("manifest.json")
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
-
+MIME_IMAGE_PREFIXES = ("image/",)
 
 # ---- Uploader parsing --------------------------------------------------
 # Guest upload filename format (from Apps Script):
