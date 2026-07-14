@@ -32,7 +32,7 @@ jobs:
         env:
           UPLOAD_DEPLOYMENT_ID: ${{ secrets.UPLOAD_DEPLOYMENT_ID }}
         run: |
-          sed -i "s|__UPLOAD_DEPLOYMENT_ID__|$UPLOAD_DEPLOYMENT_ID|g" upload.html
+          sed -i "s|__UPLOAD_DEPLOYMENT_ID__|$UPLOAD_DEPLOYMENT_ID|g" *.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
