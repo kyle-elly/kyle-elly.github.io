@@ -1,0 +1,63 @@
+name: Prune Gallery (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (show what would be removed, don't delete)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: gallery-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Write service account key
+        run: echo '${{ secrets.GDRIVE_SA_JSON }}' > sa.json
+
+      - name: Run prune
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_SA_FILE: sa.json
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python scripts/prune_gallery.py --dry-run
+          else
+            python scripts/prune_gallery.py
+          fi
+
+      - name: Clean up key
+        if: always()
+        run: rm -f sa.json
+
+      - name: Commit changes
+        if: ${{ inputs.dry_run == false }}
+        run: |
+          git config user.name  "gallery-sync[bot]"
+          git config user.email "gallery-sync@users.noreply.github.com"
+          git add thumbnails manifest.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Prune gallery ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git push
+          fi
