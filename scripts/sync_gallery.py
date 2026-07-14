@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Download new guest photos from Drive, generate 400px grid thumbnails
-   and 800px lightbox images, and update manifest.json.
+"""Download new guest photos from Drive, generate thumbnails and
+   large images, and update manifest.json.
    Idempotent: only new files are processed."""
 
 import io
@@ -12,22 +12,15 @@ from pathlib import Path
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from PIL import Image, ImageOps
-from pillow_heif import register_heif_opener
 
-register_heif_opener()  # HEIC support for iPhone uploads
+from imaging import make_variants   # ← shared with sync_booth.py
 
 FOLDER_ID = os.environ["GDRIVE_FOLDER_ID"]
 SA_FILE   = os.environ["GDRIVE_SA_FILE"]
 
-THUMB_DIR = Path("thumbnails")   # 400px grid thumbs
-LARGE_DIR = Path("large")        # 800px lightbox images
+THUMB_DIR = Path("thumbnails")
+LARGE_DIR = Path("large")
 MANIFEST  = Path("manifest.json")
-
-THUMB_MAX = 400
-LARGE_MAX = 800
-THUMB_Q   = 78
-LARGE_Q   = 85
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 MIME_IMAGE_PREFIXES = ("image/",)
@@ -41,7 +34,6 @@ def load_manifest() -> dict:
 
 
 def save_manifest(entries: dict) -> None:
-    # sort newest first by uploadedAt so gallery ordering is stable
     ordered = sorted(entries.values(),
                      key=lambda e: e.get("uploadedAt", ""),
                      reverse=True)
@@ -76,30 +68,6 @@ def download_bytes(svc, file_id: str) -> bytes:
     return buf.getvalue()
 
 
-def make_variants(raw: bytes, fid: str) -> tuple[int, int]:
-    """Generate 400px thumb + 800px large. Returns (w, h) of the large one."""
-    with Image.open(io.BytesIO(raw)) as im:
-        im = ImageOps.exif_transpose(im)   # fix phone rotation
-        im = im.convert("RGB")             # HEIC/PNG → JPEG-safe
-
-        # 800px lightbox image
-        large = im.copy()
-        large.thumbnail((LARGE_MAX, LARGE_MAX), Image.LANCZOS)
-        LARGE_DIR.mkdir(parents=True, exist_ok=True)
-        large.save(LARGE_DIR / f"{fid}.jpg",
-                   "JPEG", quality=LARGE_Q, optimize=True, progressive=True)
-        w, h = large.size
-
-        # 400px grid thumb
-        small = im.copy()
-        small.thumbnail((THUMB_MAX, THUMB_MAX), Image.LANCZOS)
-        THUMB_DIR.mkdir(parents=True, exist_ok=True)
-        small.save(THUMB_DIR / f"{fid}.jpg",
-                   "JPEG", quality=THUMB_Q, optimize=True, progressive=True)
-
-        return w, h
-
-
 def main() -> int:
     creds = service_account.Credentials.from_service_account_file(
         SA_FILE, scopes=SCOPES)
@@ -113,7 +81,6 @@ def main() -> int:
     added = 0
     for f in drive_files:
         fid = f["id"]
-        # Skip only if both variants already exist AND manifest knows about it
         if (fid in manifest
                 and (THUMB_DIR / f"{fid}.jpg").exists()
                 and (LARGE_DIR / f"{fid}.jpg").exists()):
@@ -121,7 +88,7 @@ def main() -> int:
 
         try:
             raw = download_bytes(svc, fid)
-            w, h = make_variants(raw, fid)
+            w, h = make_variants(raw, fid, THUMB_DIR, LARGE_DIR)
         except Exception as e:
             print(f"  !! {f['name']} ({fid}) failed: {e}", file=sys.stderr)
             continue
