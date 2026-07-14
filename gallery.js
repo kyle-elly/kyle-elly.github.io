@@ -4,6 +4,8 @@
   var LIGHTBOX_SCROLL_Y = 0;
 
   var manifestUrl = window.MANIFEST_URL || 'manifest.json';
+  var thumbDir = window.THUMB_DIR || 'thumbnails';
+  var largeDir = window.LARGE_DIR || 'large';
 
   // Show "Loading photos…" only if the fetch takes longer than 300ms.
   // Prevents a flash on fast connections.
@@ -38,7 +40,7 @@
         var html = next.map(function(f, i) {
           var globalIdx = renderedCount + i;
           return '<div class="gallery-item" data-index="' + globalIdx + '">' +
-                   '<img loading="lazy" src="thumbnails/' + f.id + '.jpg" alt="">' +
+                   '<img loading="lazy" src="' + thumbDir + '/' + f.id + '.jpg" alt="">' +
                  '</div>';
         }).join('');
 
@@ -109,11 +111,11 @@
       lbImg.style.display = 'none';
       cap.textContent = '⚠️ This photo couldn\u2019t load — swipe to continue';
     };
-    lbImg.src = 'large/' + f.id + '.jpg';
+    lbImg.src = largeDir + '/' + f.id + '.jpg';
 
     if (fromNav) {
-      new Image().src = 'large/' + FILES[(LIGHTBOX_INDEX + 1) % FILES.length].id + '.jpg';
-      new Image().src = 'large/' + FILES[(LIGHTBOX_INDEX - 1 + FILES.length) % FILES.length].id + '.jpg';
+      new Image().src = largeDir + '/' + FILES[(LIGHTBOX_INDEX + 1) % FILES.length].id + '.jpg';
+      new Image().src = largeDir + '/' + FILES[(LIGHTBOX_INDEX - 1 + FILES.length) % FILES.length].id + '.jpg';
     }
 
     LIGHTBOX_SCROLL_Y = window.scrollY;
