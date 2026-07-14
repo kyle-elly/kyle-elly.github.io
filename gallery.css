@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Alex Brush';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/alex-brush-v22-latin-regular.woff2') format('woff2');
+}
+
 :root {
   --white:            #fdfdfb;
   --eucalyptus:       #9caf88;
