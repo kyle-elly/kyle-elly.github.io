@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Download new guest photos from Drive, generate 800px thumbnails,
-   and update manifest.json. Idempotent: only new files are processed."""
+"""Download new guest photos from Drive, generate 400px grid thumbnails
+   and 800px lightbox images, and update manifest.json.
+   Idempotent: only new files are processed."""
 
 import io
 import json
@@ -16,22 +17,28 @@ from pillow_heif import register_heif_opener
 
 register_heif_opener()  # HEIC support for iPhone uploads
 
-FOLDER_ID   = os.environ["GDRIVE_FOLDER_ID"]
-SA_FILE     = os.environ["GDRIVE_SA_FILE"]
-THUMB_DIR   = Path("thumbnails")
-MANIFEST    = Path("manifest.json")
-THUMB_MAX   = 800          # longest edge, px
-JPEG_Q      = 82
-SCOPES      = ["https://www.googleapis.com/auth/drive.readonly"]
+FOLDER_ID = os.environ["GDRIVE_FOLDER_ID"]
+SA_FILE   = os.environ["GDRIVE_SA_FILE"]
 
+THUMB_DIR = Path("thumbnails")   # 400px grid thumbs
+LARGE_DIR = Path("large")        # 800px lightbox images
+MANIFEST  = Path("manifest.json")
+
+THUMB_MAX = 400
+LARGE_MAX = 800
+THUMB_Q   = 78
+LARGE_Q   = 85
+
+SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 MIME_IMAGE_PREFIXES = ("image/",)
+
 
 def load_manifest() -> dict:
     if MANIFEST.exists():
         data = json.loads(MANIFEST.read_text())
-        # normalize to {id: entry} for O(1) lookup
         return {e["id"]: e for e in data}
     return {}
+
 
 def save_manifest(entries: dict) -> None:
     # sort newest first by uploadedAt so gallery ordering is stable
@@ -39,6 +46,7 @@ def save_manifest(entries: dict) -> None:
                      key=lambda e: e.get("uploadedAt", ""),
                      reverse=True)
     MANIFEST.write_text(json.dumps(ordered, indent=2))
+
 
 def list_drive_files(svc):
     files, page_token = [], None
@@ -57,6 +65,7 @@ def list_drive_files(svc):
             break
     return [f for f in files if f["mimeType"].startswith(MIME_IMAGE_PREFIXES)]
 
+
 def download_bytes(svc, file_id: str) -> bytes:
     buf = io.BytesIO()
     req = svc.files().get_media(fileId=file_id)
@@ -66,14 +75,30 @@ def download_bytes(svc, file_id: str) -> bytes:
         _, done = dl.next_chunk()
     return buf.getvalue()
 
-def make_thumb(raw: bytes, out_path: Path) -> tuple[int, int]:
+
+def make_variants(raw: bytes, fid: str) -> tuple[int, int]:
+    """Generate 400px thumb + 800px large. Returns (w, h) of the large one."""
     with Image.open(io.BytesIO(raw)) as im:
-        im = ImageOps.exif_transpose(im)      # fix phone rotation
-        im = im.convert("RGB")                # HEIC/PNG → JPEG-safe
-        im.thumbnail((THUMB_MAX, THUMB_MAX), Image.LANCZOS)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        im.save(out_path, "JPEG", quality=JPEG_Q, optimize=True, progressive=True)
-        return im.size  # (w, h)
+        im = ImageOps.exif_transpose(im)   # fix phone rotation
+        im = im.convert("RGB")             # HEIC/PNG → JPEG-safe
+
+        # 800px lightbox image
+        large = im.copy()
+        large.thumbnail((LARGE_MAX, LARGE_MAX), Image.LANCZOS)
+        LARGE_DIR.mkdir(parents=True, exist_ok=True)
+        large.save(LARGE_DIR / f"{fid}.jpg",
+                   "JPEG", quality=LARGE_Q, optimize=True, progressive=True)
+        w, h = large.size
+
+        # 400px grid thumb
+        small = im.copy()
+        small.thumbnail((THUMB_MAX, THUMB_MAX), Image.LANCZOS)
+        THUMB_DIR.mkdir(parents=True, exist_ok=True)
+        small.save(THUMB_DIR / f"{fid}.jpg",
+                   "JPEG", quality=THUMB_Q, optimize=True, progressive=True)
+
+        return w, h
+
 
 def main() -> int:
     creds = service_account.Credentials.from_service_account_file(
@@ -88,12 +113,15 @@ def main() -> int:
     added = 0
     for f in drive_files:
         fid = f["id"]
-        if fid in manifest and (THUMB_DIR / f"{fid}.jpg").exists():
-            continue  # already processed
+        # Skip only if both variants already exist AND manifest knows about it
+        if (fid in manifest
+                and (THUMB_DIR / f"{fid}.jpg").exists()
+                and (LARGE_DIR / f"{fid}.jpg").exists()):
+            continue
 
         try:
             raw = download_bytes(svc, fid)
-            w, h = make_thumb(raw, THUMB_DIR / f"{fid}.jpg")
+            w, h = make_variants(raw, fid)
         except Exception as e:
             print(f"  !! {f['name']} ({fid}) failed: {e}", file=sys.stderr)
             continue
@@ -109,8 +137,9 @@ def main() -> int:
         print(f"  + {f['name']} ({w}x{h})")
 
     save_manifest(manifest)
-    print(f"Done. Added {added} new thumbnails. Total: {len(manifest)}.")
+    print(f"Done. Added {added} new files. Total: {len(manifest)}.")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
