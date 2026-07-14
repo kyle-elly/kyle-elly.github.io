@@ -16,7 +16,7 @@
       }
       g.innerHTML = files.map(function(f, i) {
         return '<div class="gallery-item" data-index="' + i + '">' +
-                 '<img loading="lazy" src="thumbs/' + f.name + '" alt="">' +
+                 '<img loading="lazy" src="thumbnails/' + f.id + '.jpg" alt="">' +
                '</div>';
       }).join('');
       var items = g.querySelectorAll('.gallery-item');
@@ -52,7 +52,7 @@
       lbImg.style.display = 'none';
       cap.textContent = '⚠️ This photo couldn\u2019t load — swipe to continue';
     };
-    lbImg.src = 'thumbs/' + f.name;
+    lbImg.src = 'thumbnails/' + f.id + '.jpg';
 
     LIGHTBOX_SCROLL_Y = window.scrollY;
     document.getElementById('lightbox').classList.add('visible');
