@@ -2,7 +2,7 @@ name: Sync Guest Gallery
 
 on:
   schedule:
-    - cron: "2-59/15 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:          # manual "Run workflow" button
 
 concurrency:
