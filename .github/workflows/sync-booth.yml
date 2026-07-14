@@ -35,8 +35,8 @@ jobs:
 
       - name: Run sync
         env:
-          GDRIVE_FOLDER_ID: ${{ secrets.BOOTH_DRIVE_FOLDER_ID }}   # ← DIFF: booth folder
-          GDRIVE_SA_FILE: sa.json
+          BOOTH_DRIVE_FOLDER_ID: ${{ secrets.BOOTH_DRIVE_FOLDER_ID }}   # ← DIFF: booth folder
+          BOOTH_DRIVE_SA_FILE: sa.json
           PYTHONPATH: scripts
         run: python scripts/sync_booth.py                          # ← DIFF: booth script
 
