@@ -105,6 +105,7 @@ def main() -> int:
             "uploadedAt": f.get("createdTime", ""),
             "w": w,
             "h": h,
+            "caption": "Photobooth",
         }
         added += 1
         print(f"  + {f['name']} ({w}x{h})")
