@@ -58,7 +58,7 @@ jobs:
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "Sync gallery ($(date -u +%Y-%m-%dT%H:%MZ))"
+          git commit -m "Prune gallery ($(date -u +%Y-%m-%dT%H:%MZ))"
 
           # Push with automatic rebase-retry if remote advanced during our run.
           # Up to 5 attempts, with a small backoff between them.
