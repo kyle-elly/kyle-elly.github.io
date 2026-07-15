@@ -33,6 +33,7 @@ jobs:
         id: decide
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           CURRENT_SHA: ${{ github.sha }}
           TRIGGER: ${{ github.event_name }}
         run: |
