@@ -475,11 +475,12 @@
 
       // 1. Ask Apps Script for a resumable upload URL
       const init = await callAppsScript({
-        action: 'initVideoUpload',
-        filename: file.name,
-        mimeType: file.type || 'video/mp4',
+        action:    'initVideoUpload',
+        filename:  file.name,
+        mimeType:  file.type || 'video/mp4',
         sizeBytes: file.size,
-        guestName: guestName
+        guestName: guestName,
+        origin:    window.location.origin   // ← this line
       });
 
       if (init.error) throw new Error(init.error);
