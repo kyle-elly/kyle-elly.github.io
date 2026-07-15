@@ -21,8 +21,93 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Gate: skip deploy if main hasn't moved since last successful deploy
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      should_deploy: ${{ steps.decide.outputs.should_deploy }}
+    steps:
+      - name: Decide whether to deploy
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_SHA: ${{ github.sha }}
+          TRIGGER: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          short() { echo "${1:0:7}"; }
+
+          # Manual dispatch always deploys
+          if [ "$TRIGGER" = "workflow_dispatch" ]; then
+            {
+              echo "### 🚀 Deploy decision: **PROCEED**"
+              echo ""
+              echo "| Field | Value |"
+              echo "|---|---|"
+              echo "| Trigger | \`workflow_dispatch\` (manual) |"
+              echo "| Current SHA | \`$(short "$CURRENT_SHA")\` |"
+              echo "| Reason | Manual dispatch always deploys |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Look up SHA of last successful deploy of THIS workflow
+          LAST_SHA=$(gh run list \
+            --workflow="${{ github.workflow }}" \
+            --branch=main \
+            --status=success \
+            --limit=1 \
+            --json headSha \
+            --jq '.[0].headSha // ""')
+
+          if [ -z "$LAST_SHA" ]; then
+            {
+              echo "### 🚀 Deploy decision: **PROCEED**"
+              echo ""
+              echo "| Field | Value |"
+              echo "|---|---|"
+              echo "| Trigger | \`$TRIGGER\` |"
+              echo "| Current SHA | \`$(short "$CURRENT_SHA")\` |"
+              echo "| Last deployed SHA | _none_ |"
+              echo "| Reason | No prior successful deploy found |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          elif [ "$LAST_SHA" = "$CURRENT_SHA" ]; then
+            {
+              echo "### ⏭️ Deploy decision: **SKIP**"
+              echo ""
+              echo "| Field | Value |"
+              echo "|---|---|"
+              echo "| Trigger | \`$TRIGGER\` |"
+              echo "| Current SHA | \`$(short "$CURRENT_SHA")\` |"
+              echo "| Last deployed SHA | \`$(short "$LAST_SHA")\` |"
+              echo "| Reason | SHA unchanged since last successful deploy |"
+              echo ""
+              echo "_No new commits on \`main\`. Nothing to deploy._"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "### 🚀 Deploy decision: **PROCEED**"
+              echo ""
+              echo "| Field | Value |"
+              echo "|---|---|"
+              echo "| Trigger | \`$TRIGGER\` |"
+              echo "| Current SHA | \`$(short "$CURRENT_SHA")\` |"
+              echo "| Last deployed SHA | \`$(short "$LAST_SHA")\` |"
+              echo "| Reason | New commits on \`main\` since last deploy |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
   # Single deploy job since we're just deploying
   deploy:
+    needs: check
+    if: needs.check.outputs.should_deploy == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -43,3 +128,16 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          {
+            echo "### 🎉 Pages deployment complete"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Deployed SHA | \`${GITHUB_SHA:0:7}\` |"
+            echo "| Page URL | ${{ steps.deployment.outputs.page_url }} |"
+            echo "| Status | \`${{ steps.deployment.outcome }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
