@@ -4,6 +4,10 @@ name: Deploy static content to Pages
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["Sync Guest Gallery", "Sync Photo Booth Gallery"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
