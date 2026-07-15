@@ -32,12 +32,40 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        
       - name: Inject deployment ID
         env:
           UPLOAD_DEPLOYMENT_ID: ${{ secrets.UPLOAD_DEPLOYMENT_ID }}
         run: |
+          set -euo pipefail
+      
+          # 1. Verify the secret exists and is non-empty
+          if [ -z "${UPLOAD_DEPLOYMENT_ID:-}" ]; then
+            echo "::error::UPLOAD_DEPLOYMENT_ID secret is empty or undefined"
+            exit 1
+          fi
+          echo "Secret is present (length: ${#UPLOAD_DEPLOYMENT_ID})"
+      
+          # 2. Verify at least one file has the placeholder before we start
+          if ! grep -l "__UPLOAD_DEPLOYMENT_ID__" *.html >/dev/null 2>&1; then
+            echo "::error::No HTML files contain __UPLOAD_DEPLOYMENT_ID__ placeholder"
+            exit 1
+          fi
+      
+          echo "Files with placeholder before injection:"
+          grep -l "__UPLOAD_DEPLOYMENT_ID__" *.html
+      
+          # 3. Do the substitution
           sed -i "s|__UPLOAD_DEPLOYMENT_ID__|$UPLOAD_DEPLOYMENT_ID|g" *.html
+      
+          # 4. Verify no placeholders remain
+          if grep -l "__UPLOAD_DEPLOYMENT_ID__" *.html >/dev/null 2>&1; then
+            echo "::error::Placeholder still present in some files after injection:"
+            grep -l "__UPLOAD_DEPLOYMENT_ID__" *.html
+            exit 1
+          fi
+      
+          echo "✅ All placeholders successfully replaced"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
