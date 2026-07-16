@@ -480,7 +480,7 @@
         mimeType:  file.type || 'video/mp4',
         sizeBytes: file.size,
         guestName: guestName,
-        origin:    window.location.origin   // ← this line
+        origin:    window.location.origin
       });
 
       if (init.error) throw new Error(init.error);
@@ -541,21 +541,6 @@
       }
 
       if (!fileId) throw new Error('upload finished but no file ID returned');
-
-      // 3. Tell Apps Script we're done (fire-and-forget style — don't fail on this)
-      showStatus('Finishing up…', 'info');
-      try {
-        await callAppsScript({
-          action: 'finalizeVideoUpload',
-          fileId: fileId,
-          guestName: guestName,
-          safeName: safeName,
-          sizeBytes: file.size
-        });
-      } catch (err) {
-        // The file is safely in Drive; logging failure isn't fatal.
-        console.warn('finalize failed:', err);
-      }
 
       updateProgress(file.size, file.size);
     }
