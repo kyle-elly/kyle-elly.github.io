@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Shared image processing for guest and booth gallery sync workflows.
 
-Single source of truth for thumbnail/large-image sizing, quality, and
-JPEG encoding parameters. Both sync_gallery.py (guest photos from Drive)
-and sync_booth.py (booth photos from Drive) import from this module to
+Single source of truth for thumbnail sizing, quality, and JPEG encoding
+parameters. Both sync_gallery.py (guest photos from Drive) and
+sync_booth.py (booth photos from Drive) import from this module to
 guarantee visually identical output across both pipelines.
+
+Lightbox/large images are served directly from the Drive CDN
+(lh3.googleusercontent.com/d/<id>=w####) at view time, so we no longer
+generate a `large/` directory on disk.
 """
 
 import io
@@ -18,13 +22,14 @@ from pillow_heif import register_heif_opener
 register_heif_opener()
 
 # ---- Public constants -------------------------------------------------
-# These define the "look" of the gallery. Change here → both pipelines
-# regenerate matching output on next run.
+# These define the "look" of the gallery grid. Change here → both
+# pipelines regenerate matching output on next run.
+#
+# Lightbox images are served from Drive at =w1200 / =w1600 / =w2048
+# via srcset in gallery.js; no build-side setting controls them.
 
-THUMB_MAX = 400   # max edge, px, for grid thumbnails
-LARGE_MAX = 800   # max edge, px, for lightbox images
+THUMB_MAX = 600   # max edge, px, for grid thumbnails
 THUMB_Q   = 78    # JPEG quality for thumbnails (barely visible < 80)
-LARGE_Q   = 85    # JPEG quality for lightbox
 JPEG_KWARGS = {
     "format": "JPEG",
     "optimize": True,
@@ -41,21 +46,23 @@ except AttributeError:  # Pillow < 10
 
 # ---- Public API -------------------------------------------------------
 
-def make_variants(raw: bytes,
-                  out_id: str,
-                  thumb_dir: Path,
-                  large_dir: Path) -> tuple[int, int]:
-    """Generate the 400px thumbnail and 800px large variant from source bytes.
+def make_thumbnail(raw: bytes,
+                   out_id: str,
+                   thumb_dir: Path) -> tuple[int, int]:
+    """Generate the 600px grid thumbnail from source bytes.
 
     Args:
         raw:       Original image bytes (JPEG/PNG/HEIC/etc.).
-        out_id:    Base filename (without extension). Output files will
-                   be written as {out_id}.jpg in each directory.
+        out_id:    Base filename (without extension). Output will be
+                   written as {out_id}.jpg in thumb_dir.
         thumb_dir: Destination directory for the 400px thumbnail.
-        large_dir: Destination directory for the 800px large image.
 
     Returns:
-        (width, height) of the *large* variant, for manifest metadata.
+        (width, height) of the *original* image, for manifest metadata.
+        This is used by the frontend to compute aspect ratios / reserve
+        grid space before the thumbnail loads. The lightbox itself
+        pulls sized versions from the Drive CDN, so we no longer need
+        to report a "large" size here.
 
     Raises:
         PIL.UnidentifiedImageError: bytes are not a decodable image.
@@ -65,13 +72,9 @@ def make_variants(raw: bytes,
         im = ImageOps.exif_transpose(im)   # honor camera rotation
         im = im.convert("RGB")             # HEIC/PNG alpha → JPEG-safe
 
-        # 800px lightbox variant (written first so its dimensions are
-        # what goes in the manifest even if the thumb write fails)
-        large = im.copy()
-        large.thumbnail((LARGE_MAX, LARGE_MAX), RESAMPLE)
-        large_dir.mkdir(parents=True, exist_ok=True)
-        large.save(large_dir / f"{out_id}.jpg", quality=LARGE_Q, **JPEG_KWARGS)
-        w, h = large.size
+        # Capture original dimensions before downscaling — useful for
+        # aspect-ratio hints in the manifest.
+        orig_w, orig_h = im.size
 
         # 400px grid variant
         small = im.copy()
@@ -79,4 +82,4 @@ def make_variants(raw: bytes,
         thumb_dir.mkdir(parents=True, exist_ok=True)
         small.save(thumb_dir / f"{out_id}.jpg", quality=THUMB_Q, **JPEG_KWARGS)
 
-        return w, h
+        return orig_w, orig_h
