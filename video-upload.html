@@ -508,48 +508,34 @@
     let offset = 0;
     let attempts = 0;
     let fileId = null;
-
+    
     while (offset < file.size) {
       const end = Math.min(offset + CHUNK, file.size);
       const chunk = file.slice(offset, end);
-
+      
       try {
-        const resp = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: {'Content-Range': `bytes ${offset}-${end - 1}/${file.size}`},
-          body: chunk
-        });
-
-        if (resp.status === 308) {
-          const range = resp.headers.get('Range');
-          offset = range ? parseInt(range.split('-')[1], 10) + 1 : end;
-          attempts = 0;
-        } else if (resp.ok) {
-          const meta = await resp.json();
-          fileId = meta.id;
+        const result = await putChunk(uploadUrl, chunk, offset, file.size);
+        
+        if (result.done) {
+          fileId = result.meta.id;
           offset = file.size;
-        } else if (resp.status >= 500 && attempts < MAX_RETRY) {
-          attempts++;
-          progressStatus.textContent = `Retrying (${attempts}/${MAX_RETRY})…`;
-          await sleep(1000 * attempts);
-          continue;
         } else {
-          const text = await resp.text().catch(() => '');
-          throw new Error(`server returned ${resp.status} ${text.slice(0, 120)}`);
+          offset = result.nextOffset;
+          attempts = 0;
         }
       } catch (err) {
         if (attempts < MAX_RETRY) {
           attempts++;
-          progressStatus.textContent = `Connection lost — retrying (${attempts}/${MAX_RETRY})…`;
+          progressStatus.textContent = `Retrying (${attempts}/${MAX_RETRY})…`;
           await sleep(1500 * attempts);
           continue;
         }
         throw err;
       }
-
+      
       updateProgress(offset, file.size);
     }
-
+    
     if (!fileId) throw new Error('upload finished but no file ID returned');
     updateProgress(file.size, file.size);
   }
