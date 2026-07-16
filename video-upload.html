@@ -5,8 +5,6 @@
   <title>Upload Videos · Kyle & Elly's Wedding</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preload" href="fonts/alex-brush-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
-
-  <!-- Warm up connections to both endpoints -->
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
 
@@ -29,564 +27,557 @@
       --coral-dark:       #b88585;
       --text:             #4a4a4a;
       --muted:            #999;
-      --success:          #7a8f6a;
-      --error:            #b85555;
     }
 
     * { box-sizing: border-box; }
 
     body {
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: 'Georgia', 'Times New Roman', serif;
       margin: 0;
-      padding: 40px 20px;
+      padding: 20px;
       color: var(--text);
       background-color: var(--white);
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'><g fill='none' stroke='%239caf88' stroke-width='1.2' opacity='0.35'><path d='M50 40 Q70 60 60 100 Q50 130 70 160'/><ellipse cx='55' cy='55' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(-30 55 55)'/><ellipse cx='68' cy='80' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(20 68 80)'/><ellipse cx='58' cy='105' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(-25 58 105)'/><ellipse cx='72' cy='130' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(15 72 130)'/><ellipse cx='63' cy='155' rx='7' ry='14' fill='%239caf88' opacity='0.5' transform='rotate(-20 63 155)'/><path d='M200 200 Q220 220 210 260 Q200 285 215 300'/><ellipse cx='205' cy='210' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(-30 205 210)'/><ellipse cx='215' cy='232' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(20 215 232)'/><ellipse cx='208' cy='255' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(-25 208 255)'/><ellipse cx='218' cy='280' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(15 218 280)'/><path d='M240 60 Q220 80 230 110 Q245 135 225 165'/><ellipse cx='237' cy='72' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(30 237 72)'/><ellipse cx='225' cy='92' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(-20 225 92)'/><ellipse cx='233' cy='118' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(25 233 118)'/><ellipse cx='222' cy='142' rx='6' ry='12' fill='%239caf88' opacity='0.5' transform='rotate(-15 222 142)'/></g></svg>");
       background-repeat: repeat;
       background-size: 300px 300px;
-      min-height: 100vh;
+    }
+
+    /* Home link chip in the top-left corner (matches photo page) */
+    .home-link {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--eucalyptus-dark);
+      text-decoration: none;
+      border: 1px solid rgba(156, 175, 136, 0.4);
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      box-shadow: 0 2px 6px rgba(156, 175, 136, 0.15);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 10;
+      transition: transform 0.1s;
+    }
+    .home-link:active { transform: translateY(1px); }
+    @media (max-width: 600px) {
+      .home-link {
+        top: 12px; left: 12px; padding: 7px 12px; font-size: 13px;
+      }
     }
 
     h1 {
       text-align: center;
-      margin: 10px 0 8px 0;
+      color: var(--eucalyptus-dark);
+      margin: 10px 0 20px 0;
       font-weight: normal;
       line-height: 1.1;
-      color: var(--eucalyptus-dark);
     }
-
     h1 .couple {
-      font-family: 'Alex Brush', Georgia, cursive;
+      font-family: 'Alex Brush', 'Georgia', cursive;
       font-size: 68px;
-      display: block;
       line-height: 1;
+      display: inline-block;
+      margin-bottom: 4px;
     }
-
     h1 .subtitle {
-      font-family: 'Alex Brush', Georgia, cursive;
+      font-family: 'Alex Brush', 'Georgia', cursive;
       font-size: 42px;
+      letter-spacing: 1px;
       color: var(--coral-dark);
     }
-
     @media (max-width: 600px) {
       h1 .couple   { font-size: 52px; }
       h1 .subtitle { font-size: 34px; }
     }
 
-    .tagline {
-      text-align: center;
-      color: var(--muted);
-      font-style: italic;
-      margin: 0 0 28px 0;
-    }
-
-    .card {
-      max-width: 480px;
-      margin: 0 auto 20px auto;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 20px;
-      padding: 28px 24px;
-      box-shadow: 0 4px 16px rgba(74, 74, 74, 0.1);
-    }
-
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--eucalyptus-dark);
-      margin-bottom: 8px;
-      letter-spacing: 0.3px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 12px 14px;
-      font-family: Georgia, serif;
-      font-size: 16px;
-      color: var(--text);
-      background: #fff;
-      border: 1.5px solid #d8d8d8;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      transition: border-color 0.15s;
-    }
-
-    input[type="text"]:focus {
-      outline: none;
-      border-color: var(--coral);
-    }
-
-    .file-picker {
-      position: relative;
-      display: block;
-      width: 100%;
-      text-align: center;
-      padding: 22px 20px;
-      background: linear-gradient(135deg, var(--coral) 0%, var(--coral-dark) 100%);
-      color: #fff;
+    /* Card matches the photo upload-box */
+    .upload-box {
+      background: linear-gradient(135deg, #ffffff 0%, #fafaf7 100%);
       border: none;
-      border-radius: 14px;
-      font-family: Georgia, serif;
-      font-size: 18px;
-      font-weight: 600;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 12px rgba(74, 74, 74, 0.15);
-      transition: transform 0.1s, box-shadow 0.15s;
-    }
-
-    .file-picker:active {
-      transform: translateY(2px);
-      box-shadow: 0 2px 6px rgba(74, 74, 74, 0.15);
-    }
-
-    .file-picker .emoji {
-      display: block;
-      font-size: 32px;
-      margin-bottom: 6px;
-    }
-
-    .file-picker .sub {
-      display: block;
-      font-size: 13px;
-      font-weight: normal;
-      font-style: italic;
-      opacity: 0.95;
-      margin-top: 4px;
-    }
-
-    #fileInput {
-      position: absolute;
-      opacity: 0;
-      width: 0.1px;
-      height: 0.1px;
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      max-width: 500px;
+      margin: 0 auto 24px auto;
+      box-shadow: 0 4px 20px rgba(156, 175, 136, 0.15), 0 1px 3px rgba(168, 155, 201, 0.1);
+      position: relative;
       overflow: hidden;
     }
+    .upload-box::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--eucalyptus) 0%, var(--coral) 100%);
+    }
+    .upload-box h3 {
+      font-size: 24px;
+      color: var(--eucalyptus-dark);
+      font-weight: normal;
+      letter-spacing: 0.5px;
+      margin: 0 0 6px 0;
+    }
+    .upload-hint {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 22px 0;
+      font-style: italic;
+    }
 
+    /* Name field — inline, no modal */
+    .name-field {
+      max-width: 340px;
+      margin: 0 auto 22px auto;
+      text-align: left;
+    }
+    .name-field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--eucalyptus-dark);
+      margin-bottom: 6px;
+      letter-spacing: 0.3px;
+      text-align: center;
+    }
+    #guestName {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px 16px;
+      border: 2px solid #e5e5df;
+      border-radius: 12px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+      text-align: center;
+    }
+    #guestName:focus { border-color: var(--eucalyptus); }
+
+    /* Pill "Choose Video" button (same shape as photo Choose Photos) */
+    .upload-button {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--eucalyptus) 0%, var(--eucalyptus-dark) 100%);
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 4px 12px rgba(156, 175, 136, 0.4);
+      transition: all 0.2s;
+      border: none;
+      font-family: inherit;
+    }
+    .upload-button:active:not(:disabled) {
+      background: var(--eucalyptus-dark);
+      box-shadow: 0 2px 6px rgba(156, 175, 136, 0.3);
+      transform: translateY(1px);
+    }
+    .upload-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* File info once chosen */
     .file-info {
-      margin-top: 16px;
-      padding: 12px 14px;
+      margin: 14px auto 0 auto;
+      max-width: 380px;
+      padding: 10px 14px;
       background: #f7f5f0;
       border-radius: 10px;
       font-size: 14px;
       color: var(--text);
       display: none;
+      text-align: left;
     }
-
     .file-info.visible { display: block; }
+    .file-info .name { font-weight: 600; word-break: break-all; }
+    .file-info .size { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
-    .file-info .name {
-      font-weight: 600;
-      word-break: break-all;
-    }
-
-    .file-info .size {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 2px;
-    }
-
-    .upload-btn {
-      display: block;
-      width: 100%;
-      margin-top: 18px;
-      padding: 16px;
-      background: linear-gradient(135deg, var(--eucalyptus) 0%, var(--eucalyptus-dark) 100%);
-      color: #fff;
-      border: none;
-      border-radius: 14px;
-      font-family: Georgia, serif;
-      font-size: 17px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(74, 74, 74, 0.15);
-      transition: transform 0.1s, opacity 0.15s;
-    }
-
-    .upload-btn:active:not(:disabled) {
-      transform: translateY(2px);
-    }
-
-    .upload-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
+    /* Big, obviously-visible progress bar (the whole point of this rewrite) */
     .progress-wrap {
-      margin-top: 20px;
+      margin: 22px auto 0 auto;
+      max-width: 420px;
       display: none;
     }
-
     .progress-wrap.visible { display: block; }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .progress-label .pct { color: var(--eucalyptus-dark); }
 
     .progress-bar {
       width: 100%;
-      height: 14px;
-      background: #ececec;
-      border-radius: 10px;
+      height: 22px;                                 /* was 8-14 — now big */
+      background: #eaeae4;
+      border-radius: 12px;
       overflow: hidden;
-      margin-bottom: 8px;
+      border: 1px solid rgba(156, 175, 136, 0.25);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+      position: relative;
     }
-
     .progress-fill {
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg, var(--eucalyptus) 0%, var(--eucalyptus-dark) 100%);
-      transition: width 0.2s;
-      border-radius: 10px;
+      transition: width 0.25s ease-out;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(122, 143, 106, 0.4);
+    }
+    /* Animated stripes so guests know something's happening even during slow chunks */
+    .progress-fill::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: linear-gradient(
+        45deg,
+        rgba(255,255,255,0.18) 25%, transparent 25%,
+        transparent 50%,
+        rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.18) 75%,
+        transparent 75%, transparent
+      );
+      background-size: 28px 28px;
+      animation: stripes 1s linear infinite;
+      opacity: 0.7;
+    }
+    .progress-wrap.done .progress-fill::after { animation: none; opacity: 0; }
+    @keyframes stripes {
+      0%   { background-position: 0 0; }
+      100% { background-position: 28px 0; }
     }
 
-    .progress-text {
-      display: flex;
-      justify-content: space-between;
+    .progress-bytes {
+      text-align: center;
       font-size: 13px;
       color: var(--muted);
+      margin-top: 8px;
     }
 
-    .status {
-      margin-top: 16px;
-      padding: 12px 14px;
-      border-radius: 10px;
-      font-size: 14px;
-      text-align: center;
-      display: none;
-    }
-
-    .status.visible { display: block; }
-
-    .status.info {
-      background: #f0ede6;
-      color: var(--text);
-    }
-
-    .status.success {
-      background: #eaf0e3;
-      color: var(--success);
+    /* Status message */
+    #status {
+      margin-top: 18px;
       font-weight: 600;
+      color: var(--eucalyptus-dark);
+      min-height: 22px;
+      font-size: 15px;
     }
-
-    .status.error {
-      background: #f5e0e0;
-      color: var(--error);
-      font-weight: 600;
-    }
-
-    .warning {
-      max-width: 480px;
-      margin: 0 auto 20px auto;
-      padding: 12px 16px;
-      background: rgba(212, 165, 165, 0.15);
-      border-left: 3px solid var(--coral);
-      border-radius: 6px;
-      font-size: 13px;
-      color: var(--text);
-      font-style: italic;
-    }
-
-    .back-link {
-      display: block;
-      text-align: center;
-      margin: 24px auto 0 auto;
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 14px;
-    }
-
-    .back-link:hover { color: var(--eucalyptus-dark); }
+    #status.error   { color: #b85555; }
+    #status.warn    { color: #c88a00; }
+    #status.success { color: var(--eucalyptus-dark); }
 
     footer {
       text-align: center;
       color: var(--muted);
       font-size: 13px;
-      margin: 30px 0 10px 0;
+      margin: 40px 0 20px 0;
       font-style: italic;
     }
   </style>
 </head>
 <body>
 
-  <h1>
-    <span class="couple">Kyle and Elly's</span>
-    <span class="subtitle">Video Uploads</span>
-  </h1>
+<a class="home-link" href="index.html">
+  <span aria-hidden="true">‹</span>
+  <span>Home</span>
+</a>
 
-  <p class="tagline">Share your favorite moving moments 🎥</p>
+<h1>
+  <span class="couple">Kyle and Elly's</span><br>
+  <span class="subtitle">Share Your Videos</span>
+</h1>
 
-  <div class="warning">
-    <strong>Heads up:</strong> Videos can be large. On cellular data,
-    uploads may take several minutes. Please keep this page open until it finishes.
-  </div>
+<div class="upload-box">
+  <h3>Share Your Videos</h3>
+  <p class="upload-hint">
+    Tap to add a favorite moving moment<br>
+    <span style="font-size:12px;">MP4, MOV, or WebM — up to 500 MB</span>
+  </p>
 
-  <div class="card">
+  <div class="name-field">
     <label for="guestName">Your name (optional)</label>
-    <input type="text" id="guestName" placeholder="e.g. Aunt Carol" maxlength="40" autocomplete="name">
-
-    <label for="fileInput">Choose a video</label>
-    <label class="file-picker" for="fileInput">
-      <span class="emoji">🎬</span>
-      Pick a Video
-      <span class="sub">MP4, MOV, or WebM · up to 500 MB</span>
-    </label>
-    <input type="file" id="fileInput" accept="video/mp4,video/quicktime,video/webm,video/*">
-
-    <div class="file-info" id="fileInfo">
-      <div class="name" id="fileName"></div>
-      <div class="size" id="fileSize"></div>
-    </div>
-
-    <button class="upload-btn" id="uploadBtn" disabled>Upload Video</button>
-
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-      <div class="progress-text">
-        <span id="progressPct">0%</span>
-        <span id="progressBytes"></span>
-      </div>
-    </div>
-
-    <div class="status" id="status"></div>
+    <input type="text" id="guestName" placeholder="e.g. Aunt Carol"
+           autocomplete="name" maxlength="40">
   </div>
 
-  <a class="back-link" href="index.html">← Back to photobook</a>
+  <button class="upload-button" id="chooseBtn" type="button">
+    🎬 Choose Video
+  </button>
 
-  <footer>Kyle & Elly · August 8th, 2026</footer>
+  <input type="file" id="fileInput"
+         accept="video/mp4,video/quicktime,video/webm,video/*"
+         style="display:none;">
 
-  <script>
-    // ============================================================
-    // CONFIG — replace with your deployment URL
-    // ============================================================
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqC9aycR1z37788CgWszk2G3YFA7hTaiyDf7T0An26JrLLbJTRNhdQn6BWJmW7pb7bGg/exec';
+  <div class="file-info" id="fileInfo">
+    <div class="name" id="fileName"></div>
+    <div class="size" id="fileSize"></div>
+  </div>
 
-    const MAX_SIZE  = 500 * 1024 * 1024;   // 500 MB soft cap for guests
-    const CHUNK     = 8   * 1024 * 1024;   // 8 MB chunks
-    const MAX_RETRY = 3;
+  <div style="margin-top: 16px;">
+    <button class="upload-button" id="uploadBtn" type="button" disabled
+            style="background: linear-gradient(135deg, var(--coral) 0%, var(--coral-dark) 100%);
+                   box-shadow: 0 4px 12px rgba(212, 165, 165, 0.4);">
+      Upload Video
+    </button>
+  </div>
 
-    // ============================================================
-    // Warn if guest tries to leave mid-upload
-    // ============================================================
-    let uploadInProgress = false;
-    window.addEventListener('beforeunload', (e) => {
-      if (uploadInProgress) {
-        e.preventDefault();
-        e.returnValue = 'Your video is still uploading. Leave anyway?';
-        return e.returnValue;
-      }
-    });
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label">
+      <span id="progressStatus">Uploading…</span>
+      <span class="pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-bytes" id="progressBytes"></div>
+  </div>
 
-    // ============================================================
-    // DOM refs
-    // ============================================================
-    const $ = (id) => document.getElementById(id);
-    const guestNameEl = $('guestName');
-    const fileInput   = $('fileInput');
-    const fileInfo    = $('fileInfo');
-    const fileNameEl  = $('fileName');
-    const fileSizeEl  = $('fileSize');
-    const uploadBtn   = $('uploadBtn');
-    const progressWrap = $('progressWrap');
-    const progressFill = $('progressFill');
-    const progressPct  = $('progressPct');
-    const progressBytes = $('progressBytes');
-    const statusEl    = $('status');
+  <div id="status"></div>
+</div>
 
-    // Restore guest name if they've been here before
+<footer>Thank you for celebrating with us</footer>
+
+<script>
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  const APPS_SCRIPT_URL = 'YOUR_DEPLOYMENT_URL_HERE';
+
+  const MAX_SIZE  = 500 * 1024 * 1024;   // 500 MB
+  const CHUNK     = 8   * 1024 * 1024;   // 8 MB chunks
+  const MAX_RETRY = 3;
+
+  // localStorage may be blocked in private mode
+  const LS = {
+    get(k){ try { return localStorage.getItem(k); } catch(_) { return null; } },
+    set(k,v){ try { localStorage.setItem(k,v); } catch(_) {} }
+  };
+
+  // ============================================================
+  // DOM refs
+  // ============================================================
+  const $ = (id) => document.getElementById(id);
+  const guestNameEl  = $('guestName');
+  const chooseBtn    = $('chooseBtn');
+  const fileInput    = $('fileInput');
+  const fileInfo     = $('fileInfo');
+  const fileNameEl   = $('fileName');
+  const fileSizeEl   = $('fileSize');
+  const uploadBtn    = $('uploadBtn');
+  const progressWrap = $('progressWrap');
+  const progressFill = $('progressFill');
+  const progressPct  = $('progressPct');
+  const progressStatus = $('progressStatus');
+  const progressBytes  = $('progressBytes');
+  const statusEl     = $('status');
+
+  // Restore guest name
+  const savedName = LS.get('guestName');
+  if (savedName) guestNameEl.value = savedName;
+  guestNameEl.addEventListener('change', () => {
+    LS.set('guestName', guestNameEl.value.trim());
+  });
+
+  // ============================================================
+  // Warn on leave mid-upload
+  // ============================================================
+  let uploadInProgress = false;
+  window.addEventListener('beforeunload', (e) => {
+    if (uploadInProgress) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+  });
+
+  // ============================================================
+  // File choose
+  // ============================================================
+  let selectedFile = null;
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      setStatus('Please choose a video file.', 'error');
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      setStatus(`Video is too large (${fmtBytes(file.size)}). Max 500 MB.`, 'error');
+      return;
+    }
+
+    selectedFile = file;
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = fmtBytes(file.size) + ' · ' + (file.type || 'video');
+    fileInfo.classList.add('visible');
+    uploadBtn.disabled = false;
+    setStatus('');
+  });
+
+  // ============================================================
+  // Upload
+  // ============================================================
+  uploadBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    uploadBtn.disabled = true;
+    chooseBtn.disabled = true;
+    guestNameEl.disabled = true;
+    progressWrap.classList.add('visible');
+    progressWrap.classList.remove('done');
+    uploadInProgress = true;
+
+    const guestName = guestNameEl.value.trim() || 'anonymous';
+
     try {
-      const saved = localStorage.getItem('guestName');
-      if (saved) guestNameEl.value = saved;
-    } catch (_) {}
-
-    guestNameEl.addEventListener('change', () => {
-      try { localStorage.setItem('guestName', guestNameEl.value.trim()); } catch (_) {}
-    });
-
-    // ============================================================
-    // File selection
-    // ============================================================
-    let selectedFile = null;
-
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      if (!file.type.startsWith('video/')) {
-        showStatus('Please choose a video file.', 'error');
-        return;
-      }
-      if (file.size > MAX_SIZE) {
-        showStatus(`Video is too large (${formatBytes(file.size)}). Maximum size is 500 MB.`, 'error');
-        return;
-      }
-
-      selectedFile = file;
-      fileNameEl.textContent = file.name;
-      fileSizeEl.textContent = formatBytes(file.size) + ' · ' + (file.type || 'video');
-      fileInfo.classList.add('visible');
+      await uploadVideo(selectedFile, guestName);
+      progressWrap.classList.add('done');
+      progressStatus.textContent = 'Done!';
+      setStatus('✓ Video uploaded successfully! Thank you 💚', 'success');
+      resetForNextUpload();
+    } catch (err) {
+      console.error(err);
+      setStatus('Upload failed: ' + err.message + '. Please try again.', 'error');
       uploadBtn.disabled = false;
-      hideStatus();
+      chooseBtn.disabled = false;
+      guestNameEl.disabled = false;
+    } finally {
+      uploadInProgress = false;
+    }
+  });
+
+  function resetForNextUpload() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileInfo.classList.remove('visible');
+    uploadBtn.disabled = true;
+    chooseBtn.disabled = false;
+    guestNameEl.disabled = false;
+  }
+
+  // ============================================================
+  // Core upload flow
+  // ============================================================
+  async function uploadVideo(file, guestName) {
+    progressStatus.textContent = 'Preparing…';
+    updateProgress(0, file.size);
+
+    const init = await callAppsScript({
+      action:    'initVideoUpload',
+      filename:  file.name,
+      mimeType:  file.type || 'video/mp4',
+      sizeBytes: file.size,
+      guestName: guestName,
+      origin:    window.location.origin
     });
+    if (init.error) throw new Error(init.error);
+    if (!init.uploadUrl) throw new Error('no upload URL received');
 
-    // ============================================================
-    // Upload button
-    // ============================================================
-    uploadBtn.addEventListener('click', async () => {
-      if (!selectedFile) return;
+    const uploadUrl = init.uploadUrl;
 
-      uploadBtn.disabled = true;
-      guestNameEl.disabled = true;
-      fileInput.disabled = true;
-      progressWrap.classList.add('visible');
-      uploadInProgress = true;
+    progressStatus.textContent = 'Uploading…';
+    let offset = 0;
+    let attempts = 0;
+    let fileId = null;
 
-      const guestName = guestNameEl.value.trim() || 'anonymous';
+    while (offset < file.size) {
+      const end = Math.min(offset + CHUNK, file.size);
+      const chunk = file.slice(offset, end);
 
       try {
-        await uploadVideo(selectedFile, guestName);
-        showStatus('✓ Video uploaded successfully! Thank you 💚', 'success');
-        // Allow another upload
-        resetForNextUpload();
-      } catch (err) {
-        console.error(err);
-        showStatus('Upload failed: ' + err.message + '. Please try again.', 'error');
-        uploadBtn.disabled = false;
-        guestNameEl.disabled = false;
-        fileInput.disabled = false;
-      } finally {
-        uploadInProgress = false;
-      }
-    });
+        const resp = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {'Content-Range': `bytes ${offset}-${end - 1}/${file.size}`},
+          body: chunk
+        });
 
-    function resetForNextUpload() {
-      selectedFile = null;
-      fileInput.value = '';
-      fileInfo.classList.remove('visible');
-      uploadBtn.disabled = true;
-      guestNameEl.disabled = false;
-      fileInput.disabled = false;
-      // Leave progress at 100% as a positive signal
-    }
-
-    // ============================================================
-    // Core upload flow
-    // ============================================================
-    async function uploadVideo(file, guestName) {
-      showStatus('Preparing upload…', 'info');
-      updateProgress(0, file.size, 0);
-
-      // 1. Ask Apps Script for a resumable upload URL
-      const init = await callAppsScript({
-        action:    'initVideoUpload',
-        filename:  file.name,
-        mimeType:  file.type || 'video/mp4',
-        sizeBytes: file.size,
-        guestName: guestName,
-        origin:    window.location.origin
-      });
-
-      if (init.error) throw new Error(init.error);
-      if (!init.uploadUrl) throw new Error('no upload URL received');
-
-      const uploadUrl = init.uploadUrl;
-      const safeName  = init.safeName;
-
-      // 2. PUT chunks directly to Google Drive
-      showStatus('Uploading…', 'info');
-      let offset = 0;
-      let attempts = 0;
-      let fileId = null;
-
-      while (offset < file.size) {
-        const end = Math.min(offset + CHUNK, file.size);
-        const chunk = file.slice(offset, end);
-
-        try {
-          const resp = await fetch(uploadUrl, {
-            method: 'PUT',
-            headers: {
-              'Content-Range': `bytes ${offset}-${end - 1}/${file.size}`
-            },
-            body: chunk
-          });
-
-          if (resp.status === 308) {
-            // More chunks needed
-            const range = resp.headers.get('Range');
-            offset = range ? parseInt(range.split('-')[1], 10) + 1 : end;
-            attempts = 0;
-          } else if (resp.ok) {
-            const meta = await resp.json();
-            fileId = meta.id;
-            offset = file.size;
-          } else if (resp.status >= 500 && attempts < MAX_RETRY) {
-            attempts++;
-            showStatus(`Network hiccup — retrying (${attempts}/${MAX_RETRY})…`, 'info');
-            await sleep(1000 * attempts);
-            continue;
-          } else {
-            const text = await resp.text().catch(() => '');
-            throw new Error(`server returned ${resp.status} ${text.slice(0, 120)}`);
-          }
-        } catch (err) {
-          // Network error — retry the same chunk
-          if (attempts < MAX_RETRY) {
-            attempts++;
-            showStatus(`Connection lost — retrying (${attempts}/${MAX_RETRY})…`, 'info');
-            await sleep(1500 * attempts);
-            continue;
-          }
-          throw err;
+        if (resp.status === 308) {
+          const range = resp.headers.get('Range');
+          offset = range ? parseInt(range.split('-')[1], 10) + 1 : end;
+          attempts = 0;
+        } else if (resp.ok) {
+          const meta = await resp.json();
+          fileId = meta.id;
+          offset = file.size;
+        } else if (resp.status >= 500 && attempts < MAX_RETRY) {
+          attempts++;
+          progressStatus.textContent = `Retrying (${attempts}/${MAX_RETRY})…`;
+          await sleep(1000 * attempts);
+          continue;
+        } else {
+          const text = await resp.text().catch(() => '');
+          throw new Error(`server returned ${resp.status} ${text.slice(0, 120)}`);
         }
-
-        updateProgress(offset, file.size);
+      } catch (err) {
+        if (attempts < MAX_RETRY) {
+          attempts++;
+          progressStatus.textContent = `Connection lost — retrying (${attempts}/${MAX_RETRY})…`;
+          await sleep(1500 * attempts);
+          continue;
+        }
+        throw err;
       }
 
-      if (!fileId) throw new Error('upload finished but no file ID returned');
-
-      updateProgress(file.size, file.size);
+      updateProgress(offset, file.size);
     }
 
-    // ============================================================
-    // Helpers
-    // ============================================================
+    if (!fileId) throw new Error('upload finished but no file ID returned');
+    updateProgress(file.size, file.size);
+  }
 
-    // Send JSON to Apps Script without triggering a CORS preflight.
-    // Trick: use text/plain body (browser default with no Content-Type header)
-    async function callAppsScript(payload) {
-      const resp = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        redirect: 'follow'
-      });
-      if (!resp.ok) throw new Error(`Apps Script returned ${resp.status}`);
-      return resp.json();
-    }
+  // ============================================================
+  // Helpers
+  // ============================================================
+  async function callAppsScript(payload) {
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
+    if (!resp.ok) throw new Error(`Apps Script returned ${resp.status}`);
+    return resp.json();
+  }
 
-    function updateProgress(loaded, total, pctOverride) {
-      const pct = pctOverride !== undefined
-        ? pctOverride
-        : Math.min(100, Math.round((loaded / total) * 100));
-      progressFill.style.width = pct + '%';
-      progressPct.textContent = pct + '%';
-      progressBytes.textContent = `${formatBytes(loaded)} / ${formatBytes(total)}`;
-    }
+  function updateProgress(loaded, total) {
+    const pct = Math.min(100, Math.round((loaded / total) * 100));
+    progressFill.style.width = pct + '%';
+    progressPct.textContent = pct + '%';
+    progressBytes.textContent = `${fmtBytes(loaded)} / ${fmtBytes(total)}`;
+  }
 
-    function showStatus(msg, kind) {
-      statusEl.textContent = msg;
-      statusEl.className = 'status visible ' + (kind || 'info');
-    }
+  function setStatus(msg, kind) {
+    statusEl.textContent = msg;
+    statusEl.className = kind || '';
+  }
 
-    function hideStatus() {
-      statusEl.className = 'status';
-    }
+  function fmtBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  }
 
-    function formatBytes(bytes) {
-      if (bytes < 1024) return bytes + ' B';
-      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-      if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-      return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
-    }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
 
-    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  </script>
 </body>
 </html>
