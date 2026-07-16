@@ -32,7 +32,10 @@
       var BATCH_SIZE = 60;      // photos per batch
       var renderedCount = 0;
 
-      function () {
+      function renderBatch() {
+        var next = FILES.slice(renderedCount, renderedCount + BATCH_SIZE);
+        if (!next.length) return;
+        
         var html = next.map(function(f, i) {
           var globalIdx = renderedCount + i;
           return '<div class="gallery-item" data-index="' + globalIdx + '">' +
