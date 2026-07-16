@@ -4,6 +4,20 @@
   <meta charset="UTF-8">
   <title>Upload Videos · Kyle & Elly's Wedding</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- ============================================== -->
+  <!-- CONFIG — edit these when deploying             -->
+  <!-- ============================================== -->
+  <script>
+    window.CONFIG = {
+      APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzqC9aycR1z37788CgWszk2G3YFA7hTaiyDf7T0An26JrLLbJTRNhdQn6BWJmW7pb7bGg/exec',
+      MAX_SIZE:  500 * 1024 * 1024,   // 500 MB
+      CHUNK:     8   * 1024 * 1024,   // 8 MB chunks
+      MAX_RETRY: 3
+    };
+  </script>
+
+  
   <link rel="preload" href="fonts/alex-brush-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
@@ -356,11 +370,7 @@
   // ============================================================
   // CONFIG
   // ============================================================
-  const APPS_SCRIPT_URL = 'YOUR_DEPLOYMENT_URL_HERE';
-
-  const MAX_SIZE  = 500 * 1024 * 1024;   // 500 MB
-  const CHUNK     = 8   * 1024 * 1024;   // 8 MB chunks
-  const MAX_RETRY = 3;
+  const {APPS_SCRIPT_URL, MAX_SIZE, CHUNK, MAX_RETRY} = window.CONFIG;
 
   // localStorage may be blocked in private mode
   const LS = {
