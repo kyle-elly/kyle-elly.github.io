@@ -53,7 +53,7 @@ jobs:
         run: |
           git config user.name  "booth-sync[bot]"
           git config user.email "booth-sync@users.noreply.github.com"
-          git add booth_thumbnails booth_large booth_manifest.json
+          git add booth_thumbnails booth_manifest.json
           if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0
