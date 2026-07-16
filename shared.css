@@ -23,6 +23,10 @@
   --accent-shadow:    rgba(156, 175, 136, 0.25);
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 * { box-sizing: border-box; }
 
 body {
