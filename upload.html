@@ -574,10 +574,19 @@
         failed++;
       }
     }
-
+    
     uploadInProgress = false;
     progressWrap.classList.add('done');
-
+    
+    if (uploaded > 0) {
+      // Fire-and-forget — don't block the UI on this
+      callAppsScript({
+        action:     'requestGalleryRefresh',
+        guestName:  guestName,
+        photoCount: uploaded
+      }).catch(err => console.warn('refresh trigger failed:', err));
+    }
+    
     if (uploaded === queue.length) {
       progressStatus.textContent = 'Done!';
       setStatus(`✓ ${uploaded} photo${uploaded === 1 ? '' : 's'} uploaded — thank you 💚`, 'success');
