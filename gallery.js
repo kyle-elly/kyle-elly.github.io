@@ -5,7 +5,6 @@
 
   var manifestUrl = window.MANIFEST_URL || 'manifest.json';
   var thumbDir = window.THUMB_DIR || 'thumbnails';
-  var largeDir = window.LARGE_DIR || 'large';
 
   // Show "Loading photos…" only if the fetch takes longer than 300ms.
   // Prevents a flash on fast connections.
@@ -33,14 +32,13 @@
       var BATCH_SIZE = 60;      // photos per batch
       var renderedCount = 0;
 
-      function renderBatch() {
-        var next = FILES.slice(renderedCount, renderedCount + BATCH_SIZE);
-        if (!next.length) return;
-
+      function () {
         var html = next.map(function(f, i) {
           var globalIdx = renderedCount + i;
           return '<div class="gallery-item" data-index="' + globalIdx + '">' +
-                   '<img loading="lazy" src="' + thumbDir + '/' + f.id + '.jpg" alt="">' +
+                   '<img loading="lazy" ' +
+                        'width="' + f.w + '" height="' + f.h + '" ' +
+                        'src="' + thumbDir + '/' + f.id + '.jpg" alt="">' +
                  '</div>';
         }).join('');
 
