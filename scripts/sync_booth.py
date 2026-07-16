@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Download new photobooth photos from Drive, generate 400px grid thumbnails
-   and 800px lightbox images, and update booth_manifest.json.
+"""Download new photobooth photos from Drive, generate 600px grid thumbnails,
+   and update booth_manifest.json.
    Idempotent: only new files are processed.
 
    Structurally identical to sync_gallery.py but reads from a different
-   Drive folder (via BOOTH_DRIVE_FOLDER_ID) and writes to booth_thumbnails/,
-   booth_large/, and booth_manifest.json so the two pipelines never touch
-   each other's files.
+   Drive folder (via BOOTH_DRIVE_FOLDER_ID) and writes to booth_thumbnails/
+   and booth_manifest.json so the two pipelines never touch each other's
+   files.
+
+   Lightbox images are served directly from the Drive CDN at view time
+   (lh3.googleusercontent.com/d/<id>=w####), so no `large/` directory is
+   generated on disk.
 """
 
 import io
@@ -19,13 +23,12 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
-from imaging import make_variants   # shared with sync_gallery.py
+from imaging import make_thumbnail   # shared with sync_gallery.py
 
 FOLDER_ID = os.environ["BOOTH_DRIVE_FOLDER_ID"]   # booth folder ID, injected by workflow
 SA_FILE   = os.environ["BOOTH_DRIVE_SA_FILE"]
 
 THUMB_DIR = Path("booth_thumbnails")
-LARGE_DIR = Path("booth_large")
 MANIFEST  = Path("booth_manifest.json")
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
@@ -87,14 +90,13 @@ def main() -> int:
     added = 0
     for f in drive_files:
         fid = f["id"]
-        if (fid in manifest
-                and (THUMB_DIR / f"{fid}.jpg").exists()
-                and (LARGE_DIR / f"{fid}.jpg").exists()):
+        # Skip if already processed AND the thumbnail still exists on disk
+        if fid in manifest and (THUMB_DIR / f"{fid}.jpg").exists():
             continue
 
         try:
             raw = download_bytes(svc, fid)
-            w, h = make_variants(raw, fid, THUMB_DIR, LARGE_DIR)
+            w, h = make_thumbnail(raw, fid, THUMB_DIR)
         except Exception as e:
             print(f"  !! {f['name']} ({fid}) failed: {e}", file=sys.stderr)
             continue
