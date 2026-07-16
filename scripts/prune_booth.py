@@ -16,7 +16,6 @@ from googleapiclient.discovery import build
 FOLDER_ID = os.environ["BOOTH_DRIVE_FOLDER_ID"]
 SA_FILE   = os.environ["BOOTH_DRIVE_SA_FILE"]
 THUMB_DIR = Path("booth_thumbnails")
-LARGE_DIR = Path("booth_large")
 MANIFEST  = Path("booth_manifest.json")
 SCOPES    = ["https://www.googleapis.com/auth/drive.readonly"]
 
@@ -81,7 +80,6 @@ def main() -> int:
     # Actually prune
     for fid in stale:
         (THUMB_DIR / f"{fid}.jpg").unlink(missing_ok=True)
-        (LARGE_DIR / f"{fid}.jpg").unlink(missing_ok=True)
         del manifest[fid]
 
     ordered = sorted(manifest.values(),
