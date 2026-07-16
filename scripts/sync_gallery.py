@@ -40,18 +40,19 @@ MIME_IMAGE_PREFIXES = ("image/",)
 # which reproduces today's blank-caption behavior — safe default.
 
 _UPLOADER_RE = re.compile(
-    r"^\d{8}-\d{6}_([^_]+)_([^_]+)_[0-9a-fA-F]{6}_"
+    r"^\d{8}-\d{6}_(.+?)_[0-9a-fA-F]{6}_"
 )
 
 def extract_uploader(filename: str) -> str:
-    """Return 'First Last' parsed from the guest upload filename, or ''."""
+    """Return the guest name parsed from the upload filename, or ''."""
     m = _UPLOADER_RE.match(filename)
     if not m:
         return ""
-    first, last = m.group(1).strip(), m.group(2).strip()
-    if not first and not last:
+    raw = m.group(1).strip("_")
+    if not raw or raw.lower() in ("anonymous", "guest"):
         return ""
-    return f"{first} {last}".strip()
+    # Underscores were spaces; hyphens/apostrophes preserved
+    return raw.replace("_", " ").strip()
 
 def load_manifest() -> dict:
     if MANIFEST.exists():
