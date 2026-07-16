@@ -233,6 +233,9 @@ h1 .subtitle {
   text-align: center;
   min-height: 18px;
   padding: 0 20px;
+  max-width: 80%;
+  margin: 0 auto;
+  word-break: break-word;
 }
 .lightbox-controls a {
   background: rgba(255, 255, 255, 0.95);
