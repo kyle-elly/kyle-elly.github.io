@@ -99,25 +99,42 @@
     var f = FILES[LIGHTBOX_INDEX];
     var lbImg = document.getElementById('lightboxImg');
     var cap = document.getElementById('lightboxCaption');
-
+  
     document.getElementById('lightboxSave').href =
       'https://drive.usercontent.google.com/download?id=' + f.id + '&export=download&authuser=0';
     document.getElementById('lightboxSave').setAttribute('download', f.name);
-
+  
     cap.textContent = f.caption ? '📷 ' + f.caption : '';
-
+  
     lbImg.style.display = '';
     lbImg.onerror = function() {
       lbImg.style.display = 'none';
       cap.textContent = '⚠️ This photo couldn\u2019t load — swipe to continue';
     };
-    lbImg.src = largeDir + '/' + f.id + '.jpg';
-
+  
+    // --- NEW: serve from Drive CDN instead of repo /large ---
+    var base = 'https://lh3.googleusercontent.com/d/' + f.id;
+  
+    // Clear old srcset/src FIRST so the browser doesn't briefly show
+    // the previous photo while the new one loads
+    lbImg.removeAttribute('srcset');
+    lbImg.removeAttribute('sizes');
+    lbImg.src = '';
+  
+    lbImg.sizes  = '100vw';
+    lbImg.srcset = base + '=w1200 1200w, ' + base + '=w2048 2048w';
+    lbImg.src    = base + '=w1600';   // fallback for browsers ignoring srcset
+  
     if (fromNav) {
-      new Image().src = largeDir + '/' + FILES[(LIGHTBOX_INDEX + 1) % FILES.length].id + '.jpg';
-      new Image().src = largeDir + '/' + FILES[(LIGHTBOX_INDEX - 1 + FILES.length) % FILES.length].id + '.jpg';
+      // Prefetch neighbors — match the sizes the browser will actually pick
+      [1, -1].forEach(function(d) {
+        var nb = FILES[(LIGHTBOX_INDEX + d + FILES.length) % FILES.length];
+        var nbBase = 'https://lh3.googleusercontent.com/d/' + nb.id;
+        // Prefetch the phone size (most common) — desktop will grab =w2048 on demand
+        new Image().src = nbBase + '=w1200';
+      });
     }
-
+  
     LIGHTBOX_SCROLL_Y = window.scrollY;
     document.getElementById('lightbox').classList.add('visible');
     document.body.classList.add('lightbox-open');
