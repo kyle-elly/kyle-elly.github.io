@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
-"""Download new guest photos from Drive, generate thumbnails and
-   large images, and update manifest.json.
-   Idempotent: only new files are processed."""
+"""Download new guest photos from Drive, generate grid thumbnails, and
+   update manifest.json.
+   Idempotent: only new files are processed.
+
+   Lightbox images are served directly from the Drive CDN at view time
+   (lh3.googleusercontent.com/d/<id>=w####), so no `large/` directory is
+   generated on disk.
+"""
 
 import io
 import json
@@ -14,13 +19,12 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
-from imaging import make_variants   # ← shared with sync_booth.py
+from imaging import make_thumbnail   # ← shared with sync_booth.py
 
 FOLDER_ID = os.environ["GDRIVE_FOLDER_ID"]
 SA_FILE   = os.environ["GDRIVE_SA_FILE"]
 
 THUMB_DIR = Path("thumbnails")
-LARGE_DIR = Path("large")
 MANIFEST  = Path("manifest.json")
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
@@ -104,14 +108,13 @@ def main() -> int:
     added = 0
     for f in drive_files:
         fid = f["id"]
-        if (fid in manifest
-                and (THUMB_DIR / f"{fid}.jpg").exists()
-                and (LARGE_DIR / f"{fid}.jpg").exists()):
+        # Skip if already processed AND the thumbnail still exists on disk
+        if fid in manifest and (THUMB_DIR / f"{fid}.jpg").exists():
             continue
 
         try:
             raw = download_bytes(svc, fid)
-            w, h = make_variants(raw, fid, THUMB_DIR, LARGE_DIR)
+            w, h = make_thumbnail(raw, fid, THUMB_DIR)
         except Exception as e:
             print(f"  !! {f['name']} ({fid}) failed: {e}", file=sys.stderr)
             continue
