@@ -22,9 +22,11 @@
   </h1>
 
   <p class="tagline">Photos shared by our guests 💚</p>
-  <p class="refresh-hint">Gallery updates every 6 minutes ♻️</p>
+  <p class="refresh-hint">New photos appear within a few minutes ♻️</p>
 
-  <div class="gallery" id="g"></div>
+  <div class="gallery" id="g">
+    <p class="empty">Loading photos…</p>
+  </div>
 
   <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
     <button class="lightbox-close" onclick="closeLightbox()">✕</button>
