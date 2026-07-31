@@ -39,12 +39,11 @@ html, body {
   background: #e8e8e6;
 }
 
-/* ---- The 8.5 x 11 sheet ---- */
 .sheet {
   width: 8.5in;
   height: 11in;
   margin: 24px auto;
-  padding: 0.9in 0.8in;
+  padding: 0.85in 0.8in 0.7in 0.8in;
 
   font-family: 'Georgia', 'Times New Roman', serif;
   color: var(--text);
@@ -62,7 +61,6 @@ html, body {
   text-align: center;
 }
 
-/* ---- Heading ---- */
 h1 {
   margin: 0;
   font-weight: normal;
@@ -85,11 +83,10 @@ h1 .subtitle {
   color: var(--purple-dark);
 }
 
-/* ---- QR code ---- */
 .qr {
-  margin: 0.55in 0 0.5in 0;
-  width: 3.6in;
-  height: 3.6in;
+  margin: 0.5in 0 0 0;
+  width: 3.5in;
+  height: 3.5in;
 
   background: #fff;
   border: 3px solid var(--accent-soft);
@@ -99,47 +96,44 @@ h1 .subtitle {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  padding: 12px;
 }
 
-.qr img {
+.qr canvas {
   width: 100%;
   height: 100%;
-  object-fit: contain;
   display: block;
-  padding: 10px;
+  image-rendering: pixelated;
 }
 
-.qr .placeholder {
-  font-family: 'Georgia', serif;
-  font-size: 22px;
-  letter-spacing: 2px;
-  color: var(--muted);
+.qr-url {
+  margin: 14px 0 0 0;
+  font-size: 19px;
+  letter-spacing: 0.5px;
+  color: var(--eucalyptus-dark);
 }
 
-/* ---- Call to action ---- */
 .cta {
-  margin: 0;
+  margin: 0.32in 0 0 0;
   font-size: 34px;
   color: var(--eucalyptus-dark);
 }
 
 .detail {
-  margin: 16px 0 0 0;
+  margin: 14px 0 0 0;
   font-size: 21px;
   font-style: italic;
   color: var(--text);
 }
 
-/* ---- Footer ---- */
 .thanks {
   margin-top: auto;
+  margin-bottom: 0;
   font-size: 22px;
   font-style: italic;
   color: var(--muted);
 }
 
-/* ---- Print ---- */
 @page {
   size: letter portrait;
   margin: 0;
@@ -165,9 +159,9 @@ h1 .subtitle {
       <span class="subtitle">Photo Booth</span>
     </h1>
 
-    <div class="qr">
-      <span class="placeholder">QR CODE</span>
-    </div>
+    <div class="qr"><canvas id="qrCanvas"></canvas></div>
+
+    <p class="qr-url" id="qrUrl">kyle-elly.github.io</p>
 
     <p class="cta">Scan to View &amp; Download Photos</p>
 
@@ -176,6 +170,35 @@ h1 .subtitle {
     <p class="thanks">Thank you for celebrating with us &#9829;</p>
 
   </div>
+
+  <script>
+  /* QR for https://kyle-elly.github.io/  (level H, 33x33, pre-encoded) */
+  var QR_DATA = "feac61bf882bf16a08ba956dae8ba2ebb2e8ba615cae8829c78208feaaaabf800820c8003ada50f382449d1658034d42510c172c84781a4f6e9086cbc112c81e618a5d00ca8060a067d340498449c59a081fe25e030103a65df073fa129c8bcde4a40882b803960b0787d0f093793bf8800cc3d8e8fe4f1dad08251378f8badeacf98bac53acd0baf180640823ea6720fe7e23c30";
+
+  (function () {
+    var N = 33, ROW = 9, quiet = 4, total = N + quiet * 2, scale = 36;
+
+    var cv = document.getElementById("qrCanvas");
+    cv.width = cv.height = total * scale;
+
+    var ctx = cv.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#000000";
+
+    for (var r = 0; r < N; r++) {
+      var hex = QR_DATA.substr(r * ROW, ROW), bits = "";
+      for (var i = 0; i < hex.length; i++) {
+        bits += ("000" + parseInt(hex.charAt(i), 16).toString(2)).slice(-4);
+      }
+      for (var c = 0; c < N; c++) {
+        if (bits.charAt(c) === "1") {
+          ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+        }
+      }
+    }
+  })();
+  </script>
 
 </body>
 </html>
