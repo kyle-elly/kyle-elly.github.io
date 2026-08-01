@@ -6,6 +6,10 @@
   var manifestUrl = window.MANIFEST_URL || 'manifest.json';
   var thumbDir = window.THUMB_DIR || 'thumbnails';
 
+  // Phones get w1200; desktop/tablet gets w2048. One size per device,
+  // so prefetch always matches what the browser actually requests.
+  var IMG_SIZE = (window.innerWidth > 900) ? '=w2048' : '=w1200';
+
   // Show "Loading photos…" only if the fetch takes longer than 300ms.
   // Prevents a flash on fast connections.
   var loadingTimer = setTimeout(function() {
@@ -93,7 +97,7 @@
     if (event) event.stopPropagation();
     LIGHTBOX_INDEX =
       (LIGHTBOX_INDEX + delta + FILES.length) % FILES.length;
-    showLightbox(true);   // ← pass a flag when navigating
+    (true);   // ← pass a flag when navigating
   };
 
   function showLightbox(fromNav) {
@@ -115,25 +119,19 @@
   
     // --- NEW: serve from Drive CDN instead of repo /large ---
     var base = 'https://lh3.googleusercontent.com/d/' + f.id;
-  
-    // Clear old srcset/src FIRST so the browser doesn't briefly show
-    // the previous photo while the new one loads
+
     lbImg.removeAttribute('srcset');
     lbImg.removeAttribute('sizes');
     lbImg.src = '';
-  
-    lbImg.sizes  = '100vw';
-    lbImg.srcset = base + '=w1200 1200w, ' + base + '=w2048 2048w';
-    lbImg.src    = base + '=w1600';   // fallback for browsers ignoring srcset
-  
+
+    lbImg.src = base + IMG_SIZE;
+
     if (fromNav) {
-      // Prefetch neighbors — match the sizes the browser will actually pick
-      [1, -1].forEach(function(d) {
-        var nb = FILES[(LIGHTBOX_INDEX + d + FILES.length) % FILES.length];
-        var nbBase = 'https://lh3.googleusercontent.com/d/' + nb.id;
-        // Prefetch the phone size (most common) — desktop will grab =w2048 on demand
-        new Image().src = nbBase + '=w1200';
-      });
+      // Forward neighbor only — the backward one is already cached
+      var nb = FILES[(LIGHTBOX_INDEX + 1) % FILES.length];
+      var pre = new Image();
+      pre.referrerPolicy = 'no-referrer';
+      pre.src = 'https://lh3.googleusercontent.com/d/' + nb.id + IMG_SIZE;
     }
   
     LIGHTBOX_SCROLL_Y = window.scrollY;
