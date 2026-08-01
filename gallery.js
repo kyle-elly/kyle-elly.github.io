@@ -133,6 +133,21 @@
       lbImg.style.display = 'none';
       cap.textContent = '\u26A0\uFE0F This photo couldn\u2019t load \u2014 swipe to continue';
     };
+
+    if (prefetch && FILES.length > 1) {
+      var nbIdx = (LIGHTBOX_INDEX + dir + FILES.length) % FILES.length;
+      if (nbIdx !== LIGHTBOX_INDEX) {
+        lbImg.onload = function() {
+          lbImg.onload = null;
+          var pre = new Image();
+          pre.referrerPolicy = 'no-referrer';
+          pre.src = 'https://lh3.googleusercontent.com/d/' + FILES[nbIdx].id + IMG_SIZE;
+        };
+      }
+    } else {
+      lbImg.onload = null;
+    }
+
     lbImg.src = base + IMG_SIZE;
 
     if (prefetch && FILES.length > 1) {
