@@ -201,6 +201,22 @@
       margin-top: 8px;
     }
 
+    .keep-open-warn {
+      display: none;
+      margin: 14px auto 0 auto;
+      max-width: 420px;
+      padding: 10px 14px;
+      background: #fdf6e3;
+      border: 1px solid rgba(200, 138, 0, 0.3);
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #8a6100;
+      text-align: center;
+    }
+    .keep-open-warn.visible { display: block; }
+
+
     /* Status message */
     #status {
       margin-top: 18px;
@@ -280,6 +296,12 @@
   <div id="status"></div>
 </div>
 
+<div class="keep-open-warn" id="keepOpenWarn">
+  ⚠️ <strong>Keep this page open</strong> until it says Done.<br>
+  Large videos can take several minutes. Switching apps or locking
+  your phone may cancel the upload.
+</div>
+
 <footer>Thank you for celebrating with us</footer>
 
 <script>
@@ -294,6 +316,16 @@
     set(k,v){ try { localStorage.setItem(k,v); } catch(_) {} }
   };
 
+  // Some browsers hand back an empty file.type for camera-roll videos,
+  // so fall back to the extension before rejecting.
+  const OK_VID_EXTS = ['.mp4','.mov','.m4v','.webm','.avi','.mkv','.3gp'];
+
+  function isVideoFile(file) {
+    if ((file.type || '').toLowerCase().startsWith('video/')) return true;
+    const n = file.name.toLowerCase();
+    return OK_VID_EXTS.some(ext => n.endsWith(ext));
+  }
+  
   // ============================================================
   // DOM refs
   // ============================================================
@@ -311,6 +343,7 @@
   const progressStatus = $('progressStatus');
   const progressBytes  = $('progressBytes');
   const statusEl     = $('status');
+  const keepOpenWarn = $('keepOpenWarn');
 
   // Restore guest name
   const savedName = LS.get('guestName');
@@ -336,17 +369,26 @@
   // ============================================================
   let selectedFile = null;
 
+  function clearSelection() {
+    selectedFile = null;
+    fileInput.value = '';                    // so re-picking the same file re-fires 'change'
+    fileInfo.classList.remove('visible');
+    uploadBtn.disabled = true;
+  }
+
   chooseBtn.addEventListener('click', () => fileInput.click());
 
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith('video/')) {
-      setStatus('Please choose a video file.', 'error');
+    if (!isVideoFile(file)) {
+      clearSelection();
+      setStatus('Please choose a video file (MP4, MOV, or WebM).', 'error');
       return;
     }
     if (file.size > MAX_SIZE) {
+      clearSelection();
       setStatus(`Video is too large (${fmtBytes(file.size)}). Max 500 MB.`, 'error');
       return;
     }
@@ -368,6 +410,7 @@
     uploadBtn.disabled = true;
     chooseBtn.disabled = true;
     guestNameEl.disabled = true;
+    keepOpenWarn.classList.add('visible');
     progressWrap.classList.add('visible');
     progressWrap.classList.remove('done');
     uploadInProgress = true;
@@ -388,14 +431,12 @@
       guestNameEl.disabled = false;
     } finally {
       uploadInProgress = false;
+      keepOpenWarn.classList.remove('visible');
     }
   });
 
   function resetForNextUpload() {
-    selectedFile = null;
-    fileInput.value = '';
-    fileInfo.classList.remove('visible');
-    uploadBtn.disabled = true;
+    clearSelection();
     chooseBtn.disabled = false;
     guestNameEl.disabled = false;
   }
