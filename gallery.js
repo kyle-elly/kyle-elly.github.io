@@ -90,51 +90,61 @@
 
   function openLightbox(index) {
     LIGHTBOX_INDEX = index;
-    showLightbox();
+    showLightbox({ prefetch: true, dir: 1 });
   }
 
   window.navLightbox = function(delta, event) {
     if (event) event.stopPropagation();
     LIGHTBOX_INDEX =
       (LIGHTBOX_INDEX + delta + FILES.length) % FILES.length;
-    showLightbox(true);   // ← pass a flag when navigating
+    showLightbox({ isNav: true, prefetch: true, dir: delta });
   };
 
-  function showLightbox(fromNav) {
+  // opts.isNav    — true when arriving via arrow/swipe (skip scroll capture)
+  // opts.prefetch — true to warm the next photo in the direction of travel
+  // opts.dir      — +1 forward, -1 backward (which neighbor to prefetch)
+  function showLightbox(opts) {
+    opts = opts || {};
+    var isNav    = !!opts.isNav;
+    var prefetch = !!opts.prefetch;
+    var dir      = opts.dir || 1;
+
     var f = FILES[LIGHTBOX_INDEX];
     var lbImg = document.getElementById('lightboxImg');
     var cap = document.getElementById('lightboxCaption');
-  
+
     document.getElementById('lightboxSave').href =
       'https://drive.usercontent.google.com/download?id=' + f.id + '&export=download&authuser=0';
     document.getElementById('lightboxSave').setAttribute('download', f.name);
-  
-    cap.textContent = f.caption ? '📷 ' + f.caption : '';
-  
+
+    cap.textContent = f.caption ? '\uD83D\uDCF7 ' + f.caption : '';
+
+    var base = 'https://lh3.googleusercontent.com/d/' + f.id;
+
+    // Detach the handler BEFORE clearing, so wiping the old photo
+    // can't fire onerror and flash the failure message.
+    lbImg.onerror = null;
+    lbImg.removeAttribute('srcset');
+    lbImg.removeAttribute('sizes');
+    lbImg.removeAttribute('src');
+
     lbImg.style.display = '';
     lbImg.onerror = function() {
       lbImg.style.display = 'none';
-      cap.textContent = '⚠️ This photo couldn\u2019t load — swipe to continue';
+      cap.textContent = '\u26A0\uFE0F This photo couldn\u2019t load \u2014 swipe to continue';
     };
-  
-    // --- NEW: serve from Drive CDN instead of repo /large ---
-    var base = 'https://lh3.googleusercontent.com/d/' + f.id;
-
-    lbImg.removeAttribute('srcset');
-    lbImg.removeAttribute('sizes');
-    lbImg.src = '';
-
     lbImg.src = base + IMG_SIZE;
 
-    if (fromNav) {
-      // Forward neighbor only — the backward one is already cached
-      var nb = FILES[(LIGHTBOX_INDEX + 1) % FILES.length];
-      var pre = new Image();
-      pre.referrerPolicy = 'no-referrer';
-      pre.src = 'https://lh3.googleusercontent.com/d/' + nb.id + IMG_SIZE;
+    if (prefetch && FILES.length > 1) {
+      var nbIdx = (LIGHTBOX_INDEX + dir + FILES.length) % FILES.length;
+      if (nbIdx !== LIGHTBOX_INDEX) {
+        var pre = new Image();
+        pre.referrerPolicy = 'no-referrer';
+        pre.src = 'https://lh3.googleusercontent.com/d/' + FILES[nbIdx].id + IMG_SIZE;
+      }
     }
-  
-    if (!fromNav) {
+
+    if (!isNav) {
       LIGHTBOX_SCROLL_Y = window.scrollY;
       document.body.style.top = '-' + LIGHTBOX_SCROLL_Y + 'px';
     }
