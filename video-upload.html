@@ -203,18 +203,24 @@
 
     .keep-open-warn {
       display: none;
-      margin: 14px auto 0 auto;
-      max-width: 420px;
-      padding: 10px 14px;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1000;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
       background: #fdf6e3;
-      border: 1px solid rgba(200, 138, 0, 0.3);
-      border-radius: 10px;
+      border-top: 2px solid rgba(200, 138, 0, 0.45);
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.12);
       font-size: 13px;
       line-height: 1.45;
       color: #8a6100;
       text-align: center;
     }
     .keep-open-warn.visible { display: block; }
+
+    /* Stop the banner covering the bottom of the card */
+    body.warn-open { padding-bottom: 110px; }
 
 
     /* Status message */
@@ -411,6 +417,7 @@
     chooseBtn.disabled = true;
     guestNameEl.disabled = true;
     keepOpenWarn.classList.add('visible');
+    document.body.classList.add('warn-open');
     progressWrap.classList.add('visible');
     progressWrap.classList.remove('done');
     uploadInProgress = true;
@@ -432,6 +439,7 @@
     } finally {
       uploadInProgress = false;
       keepOpenWarn.classList.remove('visible');
+      document.body.classList.remove('warn-open');
     }
   });
 
