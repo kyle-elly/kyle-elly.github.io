@@ -201,6 +201,27 @@
       margin-top: 8px;
     }
 
+    .keep-open-warn {
+      display: none;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1000;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      background: #fdf6e3;
+      border-top: 2px solid rgba(200, 138, 0, 0.45);
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.12);
+      font-size: 13px;
+      line-height: 1.45;
+      color: #8a6100;
+      text-align: center;
+    }
+    .keep-open-warn.visible { display: block; }
+
+    /* Stop the banner covering the end of the photo list */
+    body.warn-open { padding-bottom: 110px; }
+
     /* Per-photo status list */
     .file-list {
       margin: 18px auto 0 auto;
@@ -320,6 +341,13 @@
   <div id="status"></div>
 </div>
 
+<div class="keep-open-warn" id="keepOpenWarn">
+  ⚠️ <strong>Keep this page open</strong> until it says Done.
+  <span style="display:block;font-size:12px;opacity:0.85;">
+    Switching apps may cancel the remaining photos.
+  </span>
+</div>
+
 <footer>Thank you for celebrating with us</footer>
 
 <script>
@@ -355,6 +383,7 @@
   const fileList       = $('fileList');
   const fileRows       = $('fileRows');
   const statusEl       = $('status');
+  const keepOpenWarn = $('keepOpenWarn');
 
   const savedName = LS.get('guestName');
   if (savedName) guestNameEl.value = savedName;
@@ -456,6 +485,16 @@
     guestNameEl.disabled = locked;
   }
 
+  function showKeepOpen() {
+    keepOpenWarn.classList.add('visible');
+    document.body.classList.add('warn-open');
+  }
+  
+  function hideKeepOpen() {
+    keepOpenWarn.classList.remove('visible');
+    document.body.classList.remove('warn-open');
+  }
+
   // ============================================================
   // Upload button
   // ============================================================
@@ -465,6 +504,7 @@
     lockUI(true);
     progressWrap.classList.add('visible');
     progressWrap.classList.remove('done');
+    if (queue.length > 2) showKeepOpen();
     uploadInProgress = true;
 
     const guestName = guestNameEl.value.trim() || 'anonymous';
@@ -476,6 +516,7 @@
     } catch (err) {
       console.error('batch init failed:', err);
       uploadInProgress = false;
+      hideKeepOpen();
       progressStatus.textContent = 'Upload failed';
       setStatus('Could not start the upload. Check your connection and try again.', 'error');
       lockUI(false);
@@ -514,6 +555,7 @@
     uploaded = queue.filter(it => it.status === 'done').length;
 
     uploadInProgress = false;
+    hideKeepOpen();
     progressWrap.classList.add('done');
 
     if (uploaded > 0) pingGalleryRefresh(guestName, uploaded);
