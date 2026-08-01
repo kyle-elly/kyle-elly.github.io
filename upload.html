@@ -17,7 +17,10 @@
       APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxx6TmXKEuqrqDuYW2h0KPWph5M5oDMRC5TcSk8QnPTE04eF84Z_ufQj6HlIErDH8W_KA/exec',
       MAX_SIZE:  50 * 1024 * 1024,   // 50 MB per photo
       CHUNK:     8  * 1024 * 1024,   // 8 MB chunks (photos usually fit in one)
-      MAX_RETRY: 3
+      MAX_RETRY: 3,
+      // Uploads are SEQUENTIAL by design — parallel chunk PUTs tested worse
+      // on phone uplinks (contention -> latency -> chunk timeouts -> retries).
+      BATCH_MAX: 25                  // must match BATCH_MAX in Code.gs
     };
   </script>
 
@@ -320,7 +323,7 @@
 <footer>Thank you for celebrating with us</footer>
 
 <script>
-  const {APPS_SCRIPT_URL, MAX_SIZE, CHUNK, MAX_RETRY} = window.CONFIG;
+  const {APPS_SCRIPT_URL, MAX_SIZE, CHUNK, MAX_RETRY, BATCH_MAX} = window.CONFIG;
 
   const OK_TYPES = [
     'image/jpeg', 'image/jpg', 'image/png',
@@ -374,7 +377,7 @@
   // ============================================================
   // File selection (multi)
   // ============================================================
-  let queue = [];   // [{file, row, status}]
+  let queue = [];   // [{file, row, status, uploadUrl}]
 
   chooseBtn.addEventListener('click', () => fileInput.click());
 
@@ -402,7 +405,7 @@
         markRow(row, 'error', '✗', `Too large (${mb} MB) — skipped`);
         return;
       }
-      queue.push({file, row, status: 'queued'});
+      queue.push({file, row, status: 'queued', uploadUrl: null});
       totalSize += file.size;
       accepted++;
     });
@@ -447,34 +450,54 @@
     }
   }
 
+  function lockUI(locked) {
+    uploadBtn.disabled   = locked;
+    chooseBtn.disabled   = locked;
+    guestNameEl.disabled = locked;
+  }
+
   // ============================================================
   // Upload button
   // ============================================================
   uploadBtn.addEventListener('click', async () => {
     if (!queue.length) return;
 
-    uploadBtn.disabled = true;
-    chooseBtn.disabled = true;
-    guestNameEl.disabled = true;
+    lockUI(true);
     progressWrap.classList.add('visible');
     progressWrap.classList.remove('done');
     uploadInProgress = true;
 
     const guestName = guestNameEl.value.trim() || 'anonymous';
-    let uploaded = 0;
-    let failed = 0;
+
+    // ---- ONE Apps Script call for the whole batch ----------------
+    progressStatus.textContent = 'Preparing…';
+    try {
+      await initBatch(guestName);
+    } catch (err) {
+      console.error('batch init failed:', err);
+      uploadInProgress = false;
+      progressStatus.textContent = 'Upload failed';
+      setStatus('Could not start the upload. Check your connection and try again.', 'error');
+      lockUI(false);
+      uploadBtn.disabled = false;
+      return;
+    }
+
+    // ---- Sequential uploads straight to Drive --------------------
+    // One photo at a time, on purpose. Concurrent chunk PUTs performed
+    // worse in testing on phone uplinks.
+    let uploaded = 0, failed = 0;
 
     for (let i = 0; i < queue.length; i++) {
       const item = queue[i];
-      if (item.status !== 'queued') continue;
+      if (item.status !== 'queued') continue;   // skips init-time failures
 
       item.status = 'uploading';
       markRow(item.row, 'uploading', '↑');
-
       progressStatus.textContent = `Photo ${i + 1} of ${queue.length}`;
 
       try {
-        await uploadOne(item.file, guestName);
+        await uploadOne(item, guestName);
         item.status = 'done';
         markRow(item.row, 'done', '✓');
         uploaded++;
@@ -485,35 +508,30 @@
         failed++;
       }
     }
-    
+
+    // Include any photos initBatch already flagged as failed.
+    failed   = queue.filter(it => it.status === 'error').length;
+    uploaded = queue.filter(it => it.status === 'done').length;
+
     uploadInProgress = false;
     progressWrap.classList.add('done');
-    
-    if (uploaded > 0) {
-      // Fire-and-forget — don't block the UI on this
-      callAppsScript({
-        action:     'requestGalleryRefresh',
-        guestName:  guestName,
-        photoCount: uploaded
-      }).catch(err => console.warn('refresh trigger failed:', err));
-    }
-    
-    if (uploaded === queue.length) {
+
+    if (uploaded > 0) pingGalleryRefresh(guestName, uploaded);
+
+    if (failed === 0) {
       progressStatus.textContent = 'Done!';
       setStatus(`✓ ${uploaded} photo${uploaded === 1 ? '' : 's'} uploaded — thank you 💚`, 'success');
       resetForNextBatch();
     } else if (uploaded > 0) {
       progressStatus.textContent = `${uploaded} of ${queue.length} uploaded`;
-      setStatus(`Uploaded ${uploaded} of ${queue.length}. ${failed} failed — try again?`, 'warn');
-      uploadBtn.disabled = false;
-      chooseBtn.disabled = false;
-      guestNameEl.disabled = false;
+      setStatus(`Uploaded ${uploaded} of ${queue.length}. ${failed} failed — tap Upload to retry.`, 'warn');
+      queue.forEach(it => { if (it.status === 'error') it.status = 'queued'; });
+      lockUI(false);
     } else {
       progressStatus.textContent = 'Upload failed';
       setStatus('All uploads failed. Please check your connection and try again.', 'error');
-      uploadBtn.disabled = false;
-      chooseBtn.disabled = false;
-      guestNameEl.disabled = false;
+      queue.forEach(it => { it.status = 'queued'; });
+      lockUI(false);
     }
   });
 
@@ -526,24 +544,61 @@
     guestNameEl.disabled = false;
   }
 
+    async function initBatch(guestName) {
+    const pending = queue.filter(it => it.status === 'queued' && !it.uploadUrl);
+    if (!pending.length) return;
+
+    for (let start = 0; start < pending.length; start += BATCH_MAX) {
+      const slice = pending.slice(start, start + BATCH_MAX);
+
+      const resp = await callAppsScript({
+        action:    'initPhotoUploadBatch',
+        guestName: guestName,
+        origin:    window.location.origin,
+        files: slice.map(it => ({
+          filename:  it.file.name,
+          mimeType:  it.file.type || 'image/jpeg',
+          sizeBytes: it.file.size
+        }))
+      });
+
+      if (resp.error) throw new Error(resp.error);
+      const sessions = resp.sessions || [];
+
+      slice.forEach((it, i) => {
+        const s = sessions[i];
+        if (s && s.uploadUrl) {
+          it.uploadUrl = s.uploadUrl;
+        } else {
+          it.status = 'error';
+          markRow(it.row, 'error', '✗', (s && s.error) || 'no upload URL');
+        }
+      });
+    }
+  }
+
   // ============================================================
   // Signed URL upload for one photo
   // ============================================================
-  async function uploadOne(file, guestName) {
+  async function uploadOne(item, guestName) {
+    const file = item.file;
     updateProgress(0, file.size);
 
-    const init = await callAppsScript({
-      action:    'initPhotoUpload',
-      filename:  file.name,
-      mimeType:  file.type || 'image/jpeg',
-      sizeBytes: file.size,
-      guestName: guestName,
-      origin:    window.location.origin
-    });
-    if (init.error) throw new Error(init.error);
-    if (!init.uploadUrl) throw new Error('no upload URL received');
+    // Session lost / expired? Re-init just this one file.
+    if (!item.uploadUrl) {
+      const one = await callAppsScript({
+        action:    'initPhotoUpload',
+        filename:  file.name,
+        mimeType:  file.type || 'image/jpeg',
+        sizeBytes: file.size,
+        guestName: guestName,
+        origin:    window.location.origin
+      });
+      if (one.error) throw new Error(one.error);
+      if (!one.uploadUrl) throw new Error('no upload URL received');
+      item.uploadUrl = one.uploadUrl;
+    }
 
-    const uploadUrl = init.uploadUrl;
     let offset = 0;
     let attempts = 0;
     let fileId = null;
@@ -553,7 +608,7 @@
       const chunk = file.slice(offset, end);
     
       try {
-        const result = await putChunk(uploadUrl, chunk, offset, file.size);
+        const result = await putChunk(item.uploadUrl, chunk, offset, file.size);
         if (result.done) {
           fileId = result.meta.id;
           offset = file.size;
@@ -567,6 +622,7 @@
           await sleep(1500 * attempts);
           continue;
         }
+        item.uploadUrl = null; // force a fresh session on manual retry
         throw err;
       }
       updateProgress(offset, file.size);
@@ -645,6 +701,22 @@
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function pingGalleryRefresh(guestName, photoCount) {
+    const payload = JSON.stringify({
+      action: 'requestGalleryRefresh',
+      guestName: guestName,
+      photoCount: photoCount
+    });
+    try {
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: payload,
+        keepalive: true,          // survives tab close / navigation
+        redirect: 'follow'
+      }).catch(() => {});
+    } catch (_) { /* never block the UI on this */ }
+  }
 </script>
 
 </body>
