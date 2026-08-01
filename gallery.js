@@ -97,7 +97,7 @@
     if (event) event.stopPropagation();
     LIGHTBOX_INDEX =
       (LIGHTBOX_INDEX + delta + FILES.length) % FILES.length;
-    (true);   // ← pass a flag when navigating
+    showLightbox(true);   // ← pass a flag when navigating
   };
 
   function showLightbox(fromNav) {
@@ -134,10 +134,13 @@
       pre.src = 'https://lh3.googleusercontent.com/d/' + nb.id + IMG_SIZE;
     }
   
-    LIGHTBOX_SCROLL_Y = window.scrollY;
+    if (!fromNav) {
+      LIGHTBOX_SCROLL_Y = window.scrollY;
+      document.body.style.top = '-' + LIGHTBOX_SCROLL_Y + 'px';
+    }
+
     document.getElementById('lightbox').classList.add('visible');
     document.body.classList.add('lightbox-open');
-    document.body.style.top = '-' + LIGHTBOX_SCROLL_Y + 'px';
   }
 
   window.closeLightbox = function(event) {
