@@ -91,6 +91,7 @@
   function openLightbox(index) {
     LIGHTBOX_INDEX = index;
     showLightbox({ prefetch: true, dir: 1 });
+    history.pushState({ lightbox: true }, '');
   }
 
   window.navLightbox = function(delta, event) {
@@ -167,17 +168,26 @@
     document.getElementById('lightbox').classList.add('visible');
     document.body.classList.add('lightbox-open');
   }
-
+  
   window.closeLightbox = function(event) {
     if (event && event.target.tagName === 'IMG') return;
     if (event && event.target.closest && event.target.closest('.lightbox-controls')) return;
     if (event && event.target.closest && event.target.closest('.lightbox-nav')) return;
-
+  
+    if (history.state && history.state.lightbox) {
+      history.back();      // triggers popstate -> hideLightbox()
+    } else {
+      hideLightbox();      // fallback if the entry isn't there
+    }
+  };
+  
+  // UI only: actually closes the lightbox and restores scroll.
+  function hideLightbox() {
     document.getElementById('lightbox').classList.remove('visible');
     document.body.classList.remove('lightbox-open');
     document.body.style.top = '';
     window.scrollTo(0, LIGHTBOX_SCROLL_Y);
-  };
+  }
 
   document.addEventListener('keydown', function(e) {
     var visible = document.getElementById('lightbox').classList.contains('visible');
@@ -185,6 +195,12 @@
     if (e.key === 'ArrowLeft')  window.navLightbox(-1);
     if (e.key === 'ArrowRight') window.navLightbox(1);
     if (e.key === 'Escape')     window.closeLightbox();
+  });
+
+  window.addEventListener('popstate', function() {
+    if (document.getElementById('lightbox').classList.contains('visible')) {
+      hideLightbox();
+    }
   });
 
   (function() {
