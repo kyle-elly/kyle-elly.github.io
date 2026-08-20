@@ -157,15 +157,6 @@
 
     lbImg.src = base + IMG_SIZE;
 
-    if (prefetch && FILES.length > 1) {
-      var nbIdx = (LIGHTBOX_INDEX + dir + FILES.length) % FILES.length;
-      if (nbIdx !== LIGHTBOX_INDEX) {
-        var pre = new Image();
-        pre.referrerPolicy = 'no-referrer';
-        pre.src = 'https://lh3.googleusercontent.com/d/' + FILES[nbIdx].id + IMG_SIZE;
-      }
-    }
-
     if (!isNav) {
       LIGHTBOX_SCROLL_Y = window.scrollY;
       document.body.style.top = '-' + LIGHTBOX_SCROLL_Y + 'px';
