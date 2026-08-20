@@ -2,6 +2,7 @@
   var FILES = [];
   var LIGHTBOX_INDEX = 0;
   var LIGHTBOX_SCROLL_Y = 0;
+  var LIGHTBOX_HISTORY = false;
 
   var manifestUrl = window.MANIFEST_URL || 'manifest.json';
   var thumbDir = window.THUMB_DIR || 'thumbnails';
@@ -87,11 +88,16 @@
       document.getElementById('g').innerHTML =
         '<p class="empty">Gallery is warming up — check back soon 💚</p>';
     });
-
+  
   function openLightbox(index) {
     LIGHTBOX_INDEX = index;
     showLightbox({ prefetch: true, dir: 1 });
-    history.pushState({ lightbox: true }, '');
+  
+    // Only ever push ONE entry, so history.back() can never overshoot to home.
+    if (!LIGHTBOX_HISTORY) {
+      history.pushState({ lightbox: true }, '');
+      LIGHTBOX_HISTORY = true;
+    }
   }
 
   window.navLightbox = function(delta, event) {
@@ -174,10 +180,12 @@
     if (event && event.target.closest && event.target.closest('.lightbox-controls')) return;
     if (event && event.target.closest && event.target.closest('.lightbox-nav')) return;
   
-    if (history.state && history.state.lightbox) {
-      history.back();      // triggers popstate -> hideLightbox()
+    // If we added a history entry, step back so the X and the Back button
+    // behave identically. popstate -> hideLightbox does the real closing.
+    if (LIGHTBOX_HISTORY) {
+      history.back();
     } else {
-      hideLightbox();      // fallback if the entry isn't there
+      hideLightbox();   // fallback: nothing was pushed, just close locally
     }
   };
   
@@ -198,6 +206,7 @@
   });
 
   window.addEventListener('popstate', function() {
+    LIGHTBOX_HISTORY = false;
     if (document.getElementById('lightbox').classList.contains('visible')) {
       hideLightbox();
     }
