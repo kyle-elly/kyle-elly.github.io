@@ -183,6 +183,7 @@
     // If we added a history entry, step back so the X and the Back button
     // behave identically. popstate -> hideLightbox does the real closing.
     if (LIGHTBOX_HISTORY) {
+      LIGHTBOX_HISTORY = false;
       history.back();
     } else {
       hideLightbox();   // fallback: nothing was pushed, just close locally
