@@ -48,7 +48,7 @@ body.lightbox-open {
 
 /* Home button (top-left) */
 .home-link {
-  position: absolute;
+  position: fixed;
   top: 16px;
   left: 16px;
   display: inline-flex;
