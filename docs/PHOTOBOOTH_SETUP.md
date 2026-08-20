@@ -209,4 +209,3 @@ Pruning is **manual and defaults to a dry run** for safety:
 
 Booth is intentionally decoupled: it only has to put JPEGs into one Drive folder. Everything
 downstream — thumbnails, manifest, deploy — is handled by the website's existing pipeline.
-
