@@ -1,37 +1,40 @@
 # Kyle & Elly's Wedding Guest Photobook
 
 A lightweight, static wedding photo site hosted on **GitHub Pages**. Guests upload
-photos and videos from their phones; a scheduled pipeline pulls new photos from
-Google Drive, generates thumbnails, and republishes the site. There is no server
-and no database — just static files plus a nightly sync.
+photos and videos from their phones; a pipeline pulls new photos from Google Drive,
+generates thumbnails, and republishes the site. There is no server and no database —
+just static files plus a sync that runs on demand (triggered by uploads) and on a
+scheduled cron as a safety net.
 
 **Live site:** https://kyle-elly.github.io
+
+**Related repos:**
+- [`kyle-elly/PhotoUploader`](https://github.com/kyle-elly/PhotoUploader) — the Google Apps Script (`code.gs`) that brokers guest photo uploads and triggers the sync.
+- [`PhotoboothProject/photobooth`](https://github.com/PhotoboothProject/photobooth) — the open-source photo booth app that runs on the venue PC.
 
 ---
 
 ## How it works (at a glance)
 
 ```
-Guest phone              Google Drive               GitHub Actions          GitHub Pages
------------              ------------               --------------          ------------
-upload.html      ──▶  Apps Script ─▶ Drive (guest photos) ─▶ sync_gallery.py ─▶ thumbnails/ + manifest.json
-                       (cred broker)                          (nightly cron)        │
-video-upload.html ─▶  Apps Script ─▶ Drive (video CACHE) ──┐                        │
-                       (cred broker)                        │                       │
-                                                            ▼                        │
-                                                    NAS rsync job pulls videos,      │
-                                                    then DELETES them off Drive      │
-                                                                                     │
-Booth PC (separate) ──────────────▶ Drive (booth photos) ─▶ sync_booth.py ─▶ booth_thumbnails/ + booth_manifest.json
-                                                                                     │
-                                                                     static.yml deploys ──▶ live site
+Guest phone            Apps Script broker        Google Drive          GitHub Actions        GitHub Pages
+-----------            ------------------        ------------          --------------        ------------
+upload.html      ─▶ mint resumable upload URL ─▶ browser PUTs bytes ─▶ Drive (guest photos) ─▶ sync_gallery.py ─▶ thumbnails/ + manifest.json
+                    then debounced workflow_dispatch ─────────────────────────────▶ (triggers sync)   │
+video-upload.html ─▶ (video cred broker) ──────▶ Drive (video CACHE) ──┐                               │
+                                                                        ▼                               │
+                                                        NAS rsync pulls videos, DELETES them off Drive  │
+                                                                                                        │
+Booth PC (PhotoboothProject) ─▶ post-capture cmd ─▶ Drive (booth photos) ─▶ sync_booth.py ─▶ booth_thumbnails/ + booth_manifest.json
+                                + workflow_dispatch ──────────────────────────────▶ (triggers sync)    │
+                                                                                    static.yml deploys ──▶ live site
 ```
 
 - **Frontend:** hand-written static HTML/CSS/JS. No framework, no build step for the pages themselves.
-- **Uploads:** `upload.html` (photos) and `video-upload.html` (videos) are **both** Google Apps Script credential brokers — the Apps Script holds the Drive credentials so no secrets ever live in the browser. Upload endpoints are intentionally kept private.
-- **Photos** flow into a guest Drive folder that the nightly sync turns into thumbnails + `manifest.json`.
+- **Uploads use a signed-URL (resumable) pattern.** The Apps Script brokers **do not receive the photo bytes**. The browser asks the Apps Script to *mint* a Drive **resumable upload session URL** (created with the script's own OAuth token), then uploads the file bytes **directly to Drive**. So no Drive credentials ever reach the browser, and large files never pass through Apps Script. Upload endpoints are intentionally kept private.
+- **Photos** flow into a guest Drive folder; the sync turns them into thumbnails + `manifest.json`.
 - **Videos** use Drive only as a **temporary cache**: an rsync job on the couple's NAS periodically pulls new videos out of Drive, stores them locally, and **deletes them from Drive** so the Drive quota never fills with large video files. Videos never appear in any public gallery.
-- **Photo booth** is a **separate application running on a PC at the venue** (not part of this repo). It uploads its captures straight to a dedicated booth Drive folder, which `sync_booth.py` turns into `booth_thumbnails/` + `booth_manifest.json`. See **[docs/PHOTOBOOTH_SETUP.md](docs/PHOTOBOOTH_SETUP.md)**.
+- **Photo booth** is the open-source **[PhotoboothProject](https://github.com/PhotoboothProject/photobooth)** app running on a Linux PC at the venue (not part of this repo). A post-capture command uploads each shot to a dedicated booth Drive folder and triggers `sync-booth.yml`. See **[docs/PHOTOBOOTH_SETUP.md](docs/PHOTOBOOTH_SETUP.md)**.
 - **Thumbnails:** generated server-side in the Actions runner (600px grid thumbnails).
 - **Full images:** served directly from the Google Drive CDN (`lh3.googleusercontent.com`) at view time — no large images are stored in the repo.
 - **Downloads:** the "Save Hi Res Photo" link points at `drive.usercontent.google.com`.
@@ -73,8 +76,8 @@ Booth PC (separate) ──────────────▶ Drive (booth p
 ├── requirements.txt         # Python deps for the sync scripts
 │
 └── .github/workflows/
-    ├── sync-gallery.yml     # Nightly guest sync (cron 17 3 * * *)
-    ├── sync-booth.yml       # Nightly booth sync (cron 37 3 * * *)
+    ├── sync-gallery.yml     # Guest sync (workflow_dispatch + scheduled cron safety net)
+    ├── sync-booth.yml       # Booth sync (workflow_dispatch + scheduled cron safety net)
     ├── prune-gallery.yml    # Manual prune (workflow_dispatch, dry-run default)
     ├── prune-booth.yml      # Manual prune (workflow_dispatch, dry-run default)
     └── static.yml           # Deploy to Pages after a successful sync
@@ -119,26 +122,67 @@ are not set, so the booth page **must** set them or it will silently show guest 
 
 ## Uploads (guest-facing)
 
-Both upload pages are thin frontends over a **Google Apps Script web app** that acts as
-a credential broker: the browser never sees Drive credentials, it just POSTs files to the
-Apps Script `/exec` endpoint, which writes them into Drive on the user's behalf.
+The guest photo uploader is the **Google Apps Script in [`kyle-elly/PhotoUploader`](https://github.com/kyle-elly/PhotoUploader)** (`code.gs`). It is a
+**credential broker that mints signed upload URLs** — it never handles the photo bytes itself.
 
-- **`upload.html` (photos)** — writes into the guest photo Drive folder. `sync_gallery.py` later turns these into gallery thumbnails.
-- **`video-upload.html` (videos)** — writes into a **video cache** Drive folder. Videos are *not* published to the site. Instead, an **rsync job on the couple's NAS** periodically:
-  1. checks the video cache folder in Drive for new files,
-  2. downloads them to the NAS, and
-  3. **deletes them from Drive** once safely stored.
+**How a guest photo upload works:**
+1. The browser sends the Apps Script a batch of file descriptors (name, MIME type, size) via the `initPhotoUploadBatch` action.
+2. For each valid file (image only, ≤ 50 MB, ≤ 25 per batch), the script uses its own OAuth token to create a Drive **resumable upload session** and returns the session `uploadUrl`. All sessions in a batch are created **concurrently** with `UrlFetchApp.fetchAll`, so a 25-photo batch costs one round trip, not 25.
+3. The browser then **PUTs the actual bytes straight to Drive** at those session URLs. Nothing large ever passes through Apps Script.
+4. Filenames are normalized server-side to `YYYYMMDD-HHMMSS_<guest>_<6hex>_<original>` so the sync can parse a caption from them later.
 
-  This keeps Drive from filling up with large video files while still giving guests a
-  simple phone-friendly upload path. The NAS is the system of record for videos; Drive is
-  only a short-lived hand-off buffer.
+**Triggering the sync (debounced).** After uploading, the browser calls the `requestGalleryRefresh` action. This does **not** fire a workflow on every upload — it's coalesced:
+- A **5-minute cooldown** (`DISPATCH_COOLDOWN_MS`) is the minimum gap between workflow runs.
+- If an upload lands inside the cooldown, the script just sets a `GALLERY_PENDING` flag instead of dispatching.
+- A **time-driven trigger (`galleryFlushTick`, every 5 min)** flushes any pending flag once the cooldown clears, so a burst of guests uploading at once collapses into a single sync run rather than dozens.
+- `LockService` guards the decision so concurrent executions can't double-dispatch.
+
+When it does dispatch, `triggerGallerySync_()` POSTs to
+`…/actions/workflows/sync-gallery.yml/dispatches` with `{ "ref": "main" }`, authenticated
+by a fine-grained PAT (see [Upload-triggered syncs](#upload-triggered-syncs-near-real-time)).
+It's fire-and-forget: any failure is logged and simply falls back to the scheduled cron.
+
+**Videos** (`video-upload.html`) use a **separate** credential broker writing into a
+**video cache** Drive folder. Videos are *not* published to the site. Instead, an **rsync
+job on the couple's NAS** periodically:
+1. checks the video cache folder in Drive for new files,
+2. downloads them to the NAS, and
+3. **deletes them from Drive** once safely stored.
+
+The NAS is the system of record for videos; Drive is only a short-lived hand-off buffer.
+
+### Apps Script setup (PhotoUploader)
+
+Configured in `code.gs` constants and **Script Properties**:
+
+| Where | Key | Purpose |
+|-------|-----|---------|
+| constant | `PHOTO_FOLDER_ID` | Target guest photo Drive folder |
+| constant | `ALLOWED_ORIGINS` | Origins allowed to request upload sessions (site + localhost) |
+| Script Property | `GITHUB_PAT` | Fine-grained PAT used to dispatch the sync workflow |
+| Script Property | `GITHUB_REPO` | `owner/repo` the dispatch targets |
+| Script Property | `GALLERY_LAST_DISPATCH_MS` | (internal) last dispatch time for the cooldown |
+| Script Property | `GALLERY_PENDING` | (internal) coalescing flag |
+
+OAuth scopes (`appsscript.json`): `drive`, `script.external_request`, `script.scriptapp`.
+Web app is deployed **execute as: user deploying**, **access: anyone (anonymous)**.
+
+**One-time setup steps** in the Apps Script editor:
+- Run `installGalleryFlushTrigger()` once to install the 5-minute flush trigger.
+- Run `removeGalleryFlushTrigger()` **after the wedding** to stop consuming trigger runtime.
+- Handy diagnostics: `testDriveAccess()`, `testInitBatch()`, `testRefreshDebounce()`, `resetDispatchState()`.
 
 ## The photo booth (separate project)
 
-The photo booth is a **standalone application on a PC at the venue** — it is *not* part of
-this repository. It captures booth photos and uploads them directly to a dedicated **booth
-Drive folder**. From there the pipeline is identical to the guest gallery: `sync_booth.py`
-generates `booth_thumbnails/` + `booth_manifest.json`, and `photobooth.html` displays them.
+The photo booth is the open-source **[PhotoboothProject/photobooth](https://github.com/PhotoboothProject/photobooth)**
+app running on a **Linux PC at the venue** — a self-hosted PHP/JS photo-box with live
+preview, collages, and printing. It is *not* part of this repository.
+
+Photobooth lets you define **custom commands that run after a capture**. That hook is used
+to (a) push the new image to a dedicated **booth Drive folder** and (b) trigger
+`sync-booth.yml` via the GitHub API. From there the pipeline is identical to the guest
+gallery: `sync_booth.py` generates `booth_thumbnails/` + `booth_manifest.json`, and
+`photobooth.html` displays them.
 
 Full setup and operational notes for that PC live in
 **[docs/PHOTOBOOTH_SETUP.md](docs/PHOTOBOOTH_SETUP.md)**.
@@ -181,8 +225,8 @@ Scope used: `https://www.googleapis.com/auth/drive.readonly`.
 
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
-| `sync-gallery.yml` | cron `17 3 * * *` + manual | Sync guest photos |
-| `sync-booth.yml` | cron `37 3 * * *` + manual | Sync booth photos (offset 20 min to avoid overlap) |
+| `sync-gallery.yml` | scheduled cron (safety net) + manual + **upload-triggered** | Sync guest photos |
+| `sync-booth.yml` | scheduled cron (safety net) + manual + **upload-triggered** | Sync booth photos |
 | `static.yml` | after a successful sync (`workflow_run`) + manual | Deploy the site to GitHub Pages |
 | `prune-gallery.yml` | manual (`workflow_dispatch`) | Remove manifest/thumbnail entries no longer in Drive |
 | `prune-booth.yml` | manual (`workflow_dispatch`) | Same, for booth |
@@ -190,6 +234,25 @@ Scope used: `https://www.googleapis.com/auth/drive.readonly`.
 The two sync jobs use **separate concurrency groups** (`gallery-sync` / `booth-sync`) so
 they never collide. `static.yml` gates on the sync's `conclusion == 'success'` and skips
 deploying if `main` hasn't moved.
+
+### Upload-triggered syncs (near-real-time)
+
+Syncs are not only scheduled. After uploads, the guest Apps Script and the booth PC each
+kick off the sync via GitHub's **`workflow_dispatch`** REST endpoint
+(`POST …/actions/workflows/<file>.yml/dispatches` with `{ "ref": "main" }`) so new photos
+appear within a few minutes instead of waiting for the cron:
+
+- The guest photo Apps Script (`PhotoUploader/code.gs`) dispatches **`sync-gallery.yml`** — debounced with a 5-minute cooldown + flush trigger (see [Uploads](#uploads-guest-facing)).
+- The booth PC's post-capture command dispatches **`sync-booth.yml`**.
+
+Both are authenticated with a **fine-grained personal access token** scoped to *this repo
+only*, with just the **Actions: read & write** permission needed to start a workflow. The
+cron schedules remain as a safety net so nothing is missed if a dispatch call fails.
+
+**Token care:**
+- Scope each token to this single repository, Actions permission only — nothing broader.
+- Store it in **Script Properties** (`GITHUB_PAT`) / the booth PC's environment, never in page or client code.
+- Fine-grained PATs expire; set a calendar reminder to rotate before the wedding date.
 
 **Pruning is deliberately manual and defaults to a dry run.** Both pruners refuse to
 delete anything if Drive returns zero image files (guards against wiping the gallery on
@@ -233,3 +296,4 @@ python scripts/prune_gallery.py --dry-run
 ---
 
 Kyle & Elly · August 8th, 2026 · 💚
+
