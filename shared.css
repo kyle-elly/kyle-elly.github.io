@@ -123,21 +123,10 @@ h1 .subtitle {
 
 .gallery {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
-  align-items: center;
-  max-width: 1080px;
+  max-width: 2400px;   /* generous ceiling; or remove for true edge-to-edge */
   margin: 0 auto;
-}
-.gallery-item {
-  width: 100%;
-  /* margin-bottom no longer needed — gap handles it */
-}
-@media (max-width: 900px) {
-  .gallery { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 600px) {
-  .gallery { grid-template-columns: repeat(2, 1fr); }
 }
 
 .gallery-item img {
