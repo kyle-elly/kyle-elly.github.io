@@ -23,8 +23,7 @@
 
   function targetRowHeight() {
     var w = window.innerWidth;
-    if (w <= 600)  return 260;   // phone: 2 across
-    if (w <= 1024) return 300;   // tablet (incl. iPad landscape): ~4-5 across
+    if (w <= 1024) return 300;   // hand held
     return 450;                  // desktop 1080p+: ~6 across
   }
 
