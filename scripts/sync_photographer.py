@@ -12,7 +12,7 @@
    curated one-time delivery rather than a live feed:
      * caption is blank ("") — filenames like IMG_1234 make poor captions,
        and a repeated "Photographer" label on every tile is just noise.
-     * the manifest is sorted by NAME ASCENDING (see save_manifest), so the
+     * the manifest is sorted by NAME (natural order; see save_manifest), so the
        gallery reads in the photographer's own sequence (ceremony -> reception)
        instead of the jumbled createdTime order you'd get from a bulk upload.
        To match the guest gallery's newest-first behavior instead, change the
@@ -26,6 +26,7 @@
 import io
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -45,6 +46,15 @@ SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 MIME_IMAGE_PREFIXES = ("image/",)
 
 
+def _natural_key(entry):
+    """Natural sort key: compare digit-runs as integers so
+    'weddingphotos-2.jpg' sorts before 'weddingphotos-10.jpg'
+    (plain string sort would put '10' before '2')."""
+    name = entry.get("name", "")
+    return [int(tok) if tok.isdigit() else tok.lower()
+            for tok in re.split(r'(\d+)', name)]
+
+
 def load_manifest() -> dict:
     if MANIFEST.exists():
         data = json.loads(MANIFEST.read_text())
@@ -53,10 +63,9 @@ def load_manifest() -> dict:
 
 
 def save_manifest(entries: dict) -> None:
-    # ← DIFF: sort by filename ascending so the curated set reads in the
+    # ← DIFF: sort by filename in NATURAL order so the curated set reads in the
     #   photographer's intended order. (Booth/guest sort by uploadedAt desc.)
-    ordered = sorted(entries.values(),
-                     key=lambda e: e.get("name", ""))
+    ordered = sorted(entries.values(), key=_natural_key)
     MANIFEST.write_text(json.dumps(ordered, indent=2))
 
 
