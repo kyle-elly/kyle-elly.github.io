@@ -7,6 +7,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -18,6 +19,16 @@ SA_FILE   = os.environ["PHOTOG_DRIVE_SA_FILE"]
 THUMB_DIR = Path("photographer_thumbnails")
 MANIFEST  = Path("photographer_manifest.json")
 SCOPES    = ["https://www.googleapis.com/auth/drive.readonly"]
+
+
+def _natural_key(entry):
+    """Natural sort key: compare digit-runs as integers so
+    'weddingphotos-2.jpg' sorts before 'weddingphotos-10.jpg'
+    (plain string sort would put '10' before '2'). Must match the
+    key used in sync_photographer.py so the two stay consistent."""
+    name = entry.get("name", "")
+    return [int(tok) if tok.isdigit() else tok.lower()
+            for tok in re.split(r'(\d+)', name)]
 
 
 def list_drive_ids(svc) -> set:
@@ -82,9 +93,8 @@ def main() -> int:
         (THUMB_DIR / f"{fid}.jpg").unlink(missing_ok=True)
         del manifest[fid]
 
-    # Keep the same sort key the sync uses (name ascending).
-    ordered = sorted(manifest.values(),
-                     key=lambda e: e.get("name", ""))
+    # Keep the same NATURAL sort key the sync uses so order stays consistent.
+    ordered = sorted(manifest.values(), key=_natural_key)
     MANIFEST.write_text(json.dumps(ordered, indent=2))
     print(f"Pruned {len(stale)} entries.")
     return 0
