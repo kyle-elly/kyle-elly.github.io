@@ -3,7 +3,7 @@ name: Deploy static content to Pages
 
 on:
   workflow_run:
-    workflows: ["Sync Guest Gallery", "Sync Photo Booth Gallery", "Sync Photographer Gallery"]
+    workflows: ["Sync Guest Gallery", "Sync Photo Booth Gallery"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
