@@ -125,6 +125,7 @@ h1 .subtitle {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
+  align-items: center;
   max-width: 2400px;   /* generous ceiling; or remove for true edge-to-edge */
   margin: 0 auto;
 }
