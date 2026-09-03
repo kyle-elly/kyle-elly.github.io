@@ -1,0 +1,69 @@
+name: Sync Photographer Gallery
+
+on:
+  # ← DIFF: no cron. The photographer set is a curated, one-time delivery,
+  #   not a live feed, so there's nothing to poll for. Run this by hand from
+  #   the Actions tab after dropping (or updating) photos in the Drive folder.
+  workflow_dispatch:
+
+concurrency:
+  group: photographer-sync      # ← DIFF: separate group from gallery-sync / booth-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Write service account key
+        run: echo '${{ secrets.PHOTOG_DRIVE_SA_JSON }}' > sa.json   # ← DIFF: photographer SA
+
+      - name: Run sync
+        env:
+          PHOTOG_DRIVE_FOLDER_ID: ${{ secrets.PHOTOG_DRIVE_FOLDER_ID }}   # ← DIFF: photographer folder
+          PHOTOG_DRIVE_SA_FILE: sa.json
+          PYTHONPATH: scripts
+        run: python scripts/sync_photographer.py                    # ← DIFF: photographer script
+
+      - name: Clean up key
+        if: always()
+        run: rm -f sa.json
+
+      - name: Commit changes
+        run: |
+          git config user.name  "photographer-sync[bot]"
+          git config user.email "photographer-sync@users.noreply.github.com"
+          git add photographer_thumbnails photographer_manifest.json  # ← DIFF: photographer paths
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Sync photographer ($(date -u +%Y-%m-%dT%H:%MZ))"
+
+          for i in 1 2 3 4 5; do
+            if git push; then
+              echo "Push succeeded on attempt $i."
+              exit 0
+            fi
+            echo "Push rejected (attempt $i). Rebasing on latest main and retrying..."
+            git pull --rebase origin main
+            sleep 2
+          done
+          echo "Push failed after 5 attempts."
+          exit 1
