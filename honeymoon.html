@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kyle and Elly's Honeymoon Gallery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://lh3.googleusercontent.com">
+  <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+  <link rel="preload" href="fonts/alex-brush-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+  <a class="home-link" href="index.html">
+    <span aria-hidden="true">‹</span>
+    <span>Home</span>
+  </a>
+  
+  <h1>
+    <span class="couple">Kyle and Elly's</span>
+    <span class="subtitle">Honeymoon Gallery</span>
+  </h1>
+
+  <p class="tagline">Photos from our honeymoon 🏝️</p>
+  <p class="refresh-hint">Where we escaped to after the big day 🌴</p>
+  
+  <div class="gallery" id="g"></div>
+
+  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <button class="lightbox-nav prev" onclick="navLightbox(-1, event)">‹</button>
+    <img id="lightboxImg" alt="Photo" referrerpolicy="no-referrer">
+    <button class="lightbox-nav next" onclick="navLightbox(1, event)">›</button>
+    <div class="lightbox-controls">
+      <div id="lightboxCaption" class="lightbox-caption"></div>
+      <a id="lightboxSave" href="#" download>💾 Save Hi Res Photo</a>
+    </div>
+  </div>
+
+  <footer>Thank you for celebrating with us</footer>
+  
+  <script>
+    window.MANIFEST_URL = 'honeymoon_manifest.json';
+    window.THUMB_DIR    = 'honeymoon_thumbnails';
+  </script>
+  <script src="gallery.js"></script>
+</body>
+</html>
