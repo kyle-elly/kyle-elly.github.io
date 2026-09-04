@@ -48,6 +48,17 @@ MIME_IMAGE_PREFIXES = ("image/",)
 # what it did, and re-running picks up where it left off (idempotent).
 MAX_PER_RUN = int(os.environ.get("HONEYMOON_MAX_PER_RUN", "0"))
 
+def taken_at(f):
+    """Capture time from EXIF (imageMediaMetadata.time), normalized to
+    ISO-ish 'YYYY-MM-DDTHH:MM:SS' so it sorts alongside createdTime.
+    Falls back to Drive's createdTime when a file has no EXIF timestamp
+    (screenshots, edited exports, etc.)."""
+    meta = f.get("imageMediaMetadata") or {}
+    t = meta.get("time")            # EXIF format: "YYYY:MM:DD HH:MM:SS"
+    if t and len(t) >= 19:
+        date, _, clock = t.partition(" ")
+        return date.replace(":", "-") + "T" + clock
+    return f.get("createdTime", "")
 
 def load_manifest() -> dict:
     if MANIFEST.exists():
@@ -59,8 +70,8 @@ def load_manifest() -> dict:
 def save_manifest(entries: dict) -> None:
     # ← DIFF: sort by filename ascending so the curated set reads in the
     #   intended order. (Booth/guest sort by uploadedAt desc.)
-    ordered = sorted(entries.values(),
-                     key=lambda e: e.get("name", ""))
+    ordered = sorted(manifest.values(),
+                     key=lambda e: e.get("takenAt") or e.get("uploadedAt", ""))
     MANIFEST.write_text(json.dumps(ordered, indent=2))
 
 
@@ -120,6 +131,7 @@ def main() -> int:
             "id": fid,
             "name": f["name"],
             "uploadedAt": f.get("createdTime", ""),
+            "takenAt": taken_at(f),
             "w": w,
             "h": h,
             "caption": "",          # ← DIFF: honeymoon photos carry no caption
