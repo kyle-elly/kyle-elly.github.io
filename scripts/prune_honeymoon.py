@@ -82,9 +82,9 @@ def main() -> int:
         (THUMB_DIR / f"{fid}.jpg").unlink(missing_ok=True)
         del manifest[fid]
 
-    # Keep the same sort key the sync uses (name ascending).
+    # Keep the same sort key the sync uses (capture time, fallback upload time).
     ordered = sorted(manifest.values(),
-                     key=lambda e: e.get("name", ""))
+                     key=lambda e: e.get("takenAt") or e.get("uploadedAt", ""))
     MANIFEST.write_text(json.dumps(ordered, indent=2))
     print(f"Pruned {len(stale)} entries.")
     return 0
