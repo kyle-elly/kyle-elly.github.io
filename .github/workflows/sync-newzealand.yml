@@ -1,0 +1,74 @@
+name: Sync New Zealand Gallery
+
+on:
+  # ← DIFF: no cron. The newzealand set is a curated, one-time drop, not a live
+  #   feed, so there's nothing to poll for. Run this by hand from the Actions
+  #   tab after dropping (or updating) photos in the Drive folder.
+  workflow_dispatch:
+
+concurrency:
+  group: newzealand-sync         # ← DIFF: separate group from gallery/booth/photographer
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Write service account key
+        # ← DIFF: reuse the EXISTING guest service account (GDRIVE_SA_JSON).
+        #   The newzealand Drive folder just needs to be shared with that same
+        #   SA's client_email — no new key/JSON is required.
+        run: echo '${{ secrets.GDRIVE_SA_JSON }}' > sa.json
+
+      - name: Run sync
+        env:
+          NEWZEALAND_DRIVE_FOLDER_ID: ${{ secrets.NEWZEALAND_DRIVE_FOLDER_ID }}   # ← the only new secret
+          NEWZEALAND_DRIVE_SA_FILE: sa.json
+          # Optional checkpoint cap for a big one-time drop; "0"/unset = no cap.
+          NEWZEALAND_MAX_PER_RUN: "0"
+          PYTHONPATH: scripts
+        run: python scripts/sync_newzealand.py
+
+      - name: Clean up key
+        if: always()
+        run: rm -f sa.json
+
+      - name: Commit changes
+        run: |
+          git config user.name  "newzealand-sync[bot]"
+          git config user.email "newzealand-sync@users.noreply.github.com"
+          git add newzealand_thumbnails newzealand_manifest.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Sync newzealand ($(date -u +%Y-%m-%dT%H:%MZ))"
+
+          for i in 1 2 3 4 5; do
+            if git push; then
+              echo "Push succeeded on attempt $i."
+              exit 0
+            fi
+            echo "Push rejected (attempt $i). Rebasing on latest main and retrying..."
+            git pull --rebase origin main
+            sleep 2
+          done
+          echo "Push failed after 5 attempts."
+          exit 1
