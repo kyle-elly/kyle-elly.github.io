@@ -70,7 +70,7 @@ def load_manifest() -> dict:
 def save_manifest(entries: dict) -> None:
     # ← DIFF: sort by filename ascending so the curated set reads in the
     #   intended order. (Booth/guest sort by uploadedAt desc.)
-    ordered = sorted(manifest.values(),
+    ordered = sorted(entries.values(),
                      key=lambda e: e.get("takenAt") or e.get("uploadedAt", ""))
     MANIFEST.write_text(json.dumps(ordered, indent=2))
 
