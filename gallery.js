@@ -340,17 +340,22 @@
   }
   
   window.closeLightbox = function(event) {
-    if (event) event.stopPropagation();
+    if (event) {
+      event.stopPropagation();
   
-    if (event && event.target.tagName === 'IMG') return;
-    if (event && event.target.closest && event.target.closest('.lightbox-controls')) return;
-    if (event && event.target.closest && event.target.closest('.lightbox-nav')) return;
+      if (event.target.tagName === 'IMG') return;
+      if (event.target.closest && event.target.closest('.lightbox-controls')) return;
+      if (event.target.closest && event.target.closest('.lightbox-nav')) return;
+    }
   
+    // Close the UI immediately. Do not depend on popstate to make the
+    // lightbox disappear, because history navigation may be delayed.
+    hideLightbox();
+  
+    // Remove the one history entry created when the lightbox opened.
     if (LIGHTBOX_HISTORY) {
       LIGHTBOX_HISTORY = false;
       history.back();
-    } else {
-      hideLightbox();
     }
   };
 
