@@ -240,9 +240,10 @@
   window.toggleLightboxAuto = function(event) {
     if (event) event.stopPropagation();
   
-    LIGHTBOX_AUTO_ENABLED = !LIGHTBOX_AUTO_ENABLED;
-  
     var button = document.getElementById('lightboxAuto');
+    if (!button) return;
+  
+    LIGHTBOX_AUTO_ENABLED = !LIGHTBOX_AUTO_ENABLED;
   
     if (LIGHTBOX_AUTO_ENABLED) {
       button.textContent = '\u23F8 Pause';
