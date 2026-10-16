@@ -1,8 +1,8 @@
 name: Sync Guest Gallery
 
 on:
-  schedule:
-    - cron: "17 3 * * *"
+  #schedule:
+  #  - cron: "17 3 * * *"
   workflow_dispatch:          # manual "Run workflow" button
 
 concurrency:
