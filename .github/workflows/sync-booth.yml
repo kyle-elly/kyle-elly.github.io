@@ -1,8 +1,8 @@
 name: Sync Photo Booth Gallery
 
 on:
-  schedule:
-    - cron: "37 3 * * *"        # ← DIFF: offset 20 min from guest sync (:17)
+  #schedule:
+  #  - cron: "37 3 * * *"        # ← DIFF: offset 20 min from guest sync (:17)
   workflow_dispatch:
 
 concurrency:
