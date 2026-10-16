@@ -27,12 +27,32 @@
   <div class="gallery" id="g"></div>
 
   <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
-    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <button
+      class="lightbox-close"
+      type="button"
+      onclick="closeLightbox(event)"
+      aria-label="Close photo">
+      ✕
+    </button>
+  
     <button class="lightbox-nav prev" onclick="navLightbox(-1, event)">‹</button>
+  
     <img id="lightboxImg" alt="Photo" referrerpolicy="no-referrer">
+  
     <button class="lightbox-nav next" onclick="navLightbox(1, event)">›</button>
+  
     <div class="lightbox-controls">
       <div id="lightboxCaption" class="lightbox-caption"></div>
+  
+      <button
+        id="lightboxAuto"
+        type="button"
+        onclick="toggleLightboxAuto(event)"
+        title="Start slideshow"
+        aria-label="Start slideshow">
+        ▶ Slideshow
+      </button>
+  
       <a id="lightboxSave" href="#" download>💾 Save Hi Res Photo</a>
     </div>
   </div>
