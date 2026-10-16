@@ -245,12 +245,14 @@
     var button = document.getElementById('lightboxAuto');
   
     if (LIGHTBOX_AUTO_ENABLED) {
-      button.textContent = '\u23F8';   // pause
+      button.textContent = '\u23F8 Pause';
       button.title = 'Pause slideshow';
+      button.setAttribute('aria-label', 'Pause slideshow');
       startLightboxAutoAdvance();
     } else {
-      button.textContent = '\u25B6';   // play
+      button.textContent = '\u25B6 Slideshow';
       button.title = 'Start slideshow';
+      button.setAttribute('aria-label', 'Start slideshow');
       stopLightboxAutoAdvance();
     }
   };
@@ -355,6 +357,12 @@
   // UI only: actually closes the lightbox and restores scroll.
   function hideLightbox() {
     stopLightboxAutoAdvance();
+    LIGHTBOX_AUTO_ENABLED = false;
+  
+    var button = document.getElementById('lightboxAuto');
+    button.textContent = '\u25B6 Slideshow';
+    button.title = 'Start slideshow';
+    button.setAttribute('aria-label', 'Start slideshow');
   
     document.getElementById('lightbox').classList.remove('visible');
     document.body.classList.remove('lightbox-open');
