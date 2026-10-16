@@ -338,19 +338,19 @@
     document.getElementById('lightbox').classList.add('visible');
     document.body.classList.add('lightbox-open');
   }
-
+  
   window.closeLightbox = function(event) {
+    if (event) event.stopPropagation();
+  
     if (event && event.target.tagName === 'IMG') return;
     if (event && event.target.closest && event.target.closest('.lightbox-controls')) return;
     if (event && event.target.closest && event.target.closest('.lightbox-nav')) return;
-
-    // If we added a history entry, step back so the X and the Back button
-    // behave identically. popstate -> hideLightbox does the real closing.
+  
     if (LIGHTBOX_HISTORY) {
       LIGHTBOX_HISTORY = false;
       history.back();
     } else {
-      hideLightbox();   // fallback: nothing was pushed, just close locally
+      hideLightbox();
     }
   };
 
