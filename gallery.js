@@ -3,6 +3,9 @@
   var LIGHTBOX_INDEX = 0;
   var LIGHTBOX_SCROLL_Y = 0;
   var LIGHTBOX_HISTORY = false;
+  var LIGHTBOX_AUTO_TIMER = null;
+  var LIGHTBOX_AUTO_ENABLED = false;
+  var LIGHTBOX_AUTO_DELAY = 5000;
 
   var manifestUrl = window.MANIFEST_URL || 'manifest.json';
   var thumbDir = window.THUMB_DIR || 'thumbnails';
@@ -212,23 +215,67 @@
       document.getElementById('g').innerHTML =
         '<p class="empty">Gallery is warming up — check back soon \uD83D\uDC9A</p>';
     });
-
+    
+  function startLightboxAutoAdvance() {
+    stopLightboxAutoAdvance();
+  
+    if (!LIGHTBOX_AUTO_ENABLED || FILES.length <= 1) return;
+  
+    LIGHTBOX_AUTO_TIMER = setTimeout(function() {
+      LIGHTBOX_AUTO_TIMER = null;
+  
+      if (!document.getElementById('lightbox').classList.contains('visible')) return;
+  
+      window.navLightbox(1);
+    }, LIGHTBOX_AUTO_DELAY);
+  }
+  
+  function stopLightboxAutoAdvance() {
+    if (LIGHTBOX_AUTO_TIMER !== null) {
+      clearTimeout(LIGHTBOX_AUTO_TIMER);
+      LIGHTBOX_AUTO_TIMER = null;
+    }
+  }
+  
+  window.toggleLightboxAuto = function(event) {
+    if (event) event.stopPropagation();
+  
+    LIGHTBOX_AUTO_ENABLED = !LIGHTBOX_AUTO_ENABLED;
+  
+    var button = document.getElementById('lightboxAuto');
+  
+    if (LIGHTBOX_AUTO_ENABLED) {
+      button.textContent = '\u23F8';   // pause
+      button.title = 'Pause slideshow';
+      startLightboxAutoAdvance();
+    } else {
+      button.textContent = '\u25B6';   // play
+      button.title = 'Start slideshow';
+      stopLightboxAutoAdvance();
+    }
+  };
+    
   function openLightbox(index) {
     LIGHTBOX_INDEX = index;
     showLightbox({ prefetch: true, dir: 1 });
-
+  
     // Only ever push ONE entry, so history.back() can never overshoot to home.
     if (!LIGHTBOX_HISTORY) {
       history.pushState({ lightbox: true }, '');
       LIGHTBOX_HISTORY = true;
     }
+  
+    startLightboxAutoAdvance();
   }
 
   window.navLightbox = function(delta, event) {
     if (event) event.stopPropagation();
-    LIGHTBOX_INDEX =
-      (LIGHTBOX_INDEX + delta + FILES.length) % FILES.length;
+  
+    LIGHTBOX_INDEX = (LIGHTBOX_INDEX + delta + FILES.length) % FILES.length;
+  
     showLightbox({ isNav: true, prefetch: true, dir: delta });
+  
+    startLightboxAutoAdvance();
   };
 
   // opts.isNav    — true when arriving via arrow/swipe (skip scroll capture)
@@ -307,6 +354,8 @@
 
   // UI only: actually closes the lightbox and restores scroll.
   function hideLightbox() {
+    stopLightboxAutoAdvance();
+  
     document.getElementById('lightbox').classList.remove('visible');
     document.body.classList.remove('lightbox-open');
     document.body.style.top = '';
