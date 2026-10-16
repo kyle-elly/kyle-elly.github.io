@@ -365,9 +365,12 @@
     LIGHTBOX_AUTO_ENABLED = false;
   
     var button = document.getElementById('lightboxAuto');
-    button.textContent = '\u25B6 Slideshow';
-    button.title = 'Start slideshow';
-    button.setAttribute('aria-label', 'Start slideshow');
+  
+    if (button) {
+      button.textContent = '\u25B6 Slideshow';
+      button.title = 'Start slideshow';
+      button.setAttribute('aria-label', 'Start slideshow');
+    }
   
     document.getElementById('lightbox').classList.remove('visible');
     document.body.classList.remove('lightbox-open');
@@ -385,6 +388,7 @@
 
   window.addEventListener('popstate', function() {
     LIGHTBOX_HISTORY = false;
+  
     if (document.getElementById('lightbox').classList.contains('visible')) {
       hideLightbox();
     }
